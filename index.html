@@ -1,420 +1,197 @@
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>심캘</title>
-  <style>
-    body {
-      font-family: sans-serif;
-      text-align: center;
-      margin: 0;
-      padding: 0 10px;
-      background: #fff;
-    }
-    #controls {
-      margin: 15px 0;
-      user-select: none;
-    }
-    button {
-      font-size: 1.4rem;
-      padding: 8px 15px;
-      margin: 0 5px;
-      border: none;
-      border-radius: 5px;
-      background: #3a86ff;
-      color: white;
-      cursor: pointer;
-      min-width: 50px;
-      transition: background 0.3s;
-    }
-    button:hover {
-      background: #265ddb;
-    }
-    h2#monthTitle {
-      display: inline-block;
-      margin: 0 10px;
-      font-size: 1.5rem;
-    }
-    table {
-      border-collapse: collapse;
-      margin: 0 auto 30px;
-      width: 100%;
-      max-width: 600px;
-      table-layout: fixed;
-    }
-    th, td {
-      border: 1px solid #ccc;
-      vertical-align: top;
-      position: relative;
-      cursor: pointer;
-      word-break: break-word;
-      padding: 4px 6px 6px 6px;
-      user-select: none;
-    }
-    th {
-      height: 30px;
-      font-weight: bold;
-      font-size: 1.1rem;
-      background: #f0f0f0;
-    }
-    td {
-      height: 90px;
-      font-size: 1rem;
-    }
-    .date {
-      position: absolute;
-      top: 4px;
-      left: 6px;
-      font-size: 1rem;
-      color: #999;
-      font-weight: 600;
-    }
-    .memo {
-      margin-top: 24px;
-      font-size: 0.9rem;
-      white-space: normal;
-      overflow-wrap: break-word;
-      word-wrap: break-word;
-      word-break: break-word;
-      min-height: 40px;
-    }
-    .yellow {
-      background-color: #fff8b3;
-    }
-    .blue {
-      background-color: #b3daff;
-    }
-    .gray {
-      background-color: #e0e0e0;
-    }
-    .sun {
-      color: red !important;
-    }
-    .sat {
-      color: blue !important;
-    }
-    .dimmed {
-      color: #bbb !important;
-    }
-    /* 법정공휴일 표시용 */
-    .holiday {
-      color: red !important;
-      font-weight: 700;
-    }
-    #popup {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      background: #fff;
-      border: 1px solid #aaa;
-      padding: 20px;
-      box-shadow: 0 0 15px rgba(0,0,0,0.3);
-      display: none;
-      z-index: 1000;
-      width: 90%;
-      max-width: 320px;
-      border-radius: 8px;
-      user-select: text;
-    }
-    #popup b {
-      display: block;
-      margin-bottom: 12px;
-      font-size: 1.1rem;
-    }
-    #popup input[type="text"] {
-      width: 100%;
-      padding: 8px 10px;
-      font-size: 1rem;
-      margin-bottom: 12px;
-      border-radius: 4px;
-      border: 1px solid #ccc;
-      box-sizing: border-box;
-    }
-    #popup div label {
-      font-size: 1rem;
-      margin-right: 12px;
-      cursor: pointer;
-      user-select: none;
-    }
-    #popup div input[type="radio"] {
-      cursor: pointer;
-      vertical-align: middle;
-      margin-right: 4px;
-    }
-    #popup button {
-      font-size: 1.1rem;
-      padding: 8px 15px;
-      margin: 6px 6px 0 0;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      min-width: 80px;
-      user-select: none;
-      transition: background 0.3s;
-    }
-    #popup button:first-of-type {
-      background-color: #3a86ff;
-      color: white;
-    }
-    #popup button:first-of-type:hover {
-      background-color: #265ddb;
-    }
-    #popup button:last-of-type {
-      background-color: #ccc;
-    }
-    #popup button:last-of-type:hover {
-      background-color: #999;
-    }
-    #overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.4);
-      display: none;
-      z-index: 900;
-    }
-    /* 모바일용 반응형 */
-    @media (max-width: 480px) {
-      th, td {
-        font-size: 0.85rem;
-        height: 70px;
-        padding: 2px 4px 4px 4px;
-      }
-      .date {
-        font-size: 0.9rem;
-      }
-      .memo {
-        margin-top: 20px;
-        font-size: 0.8rem;
-        min-height: 35px;
-      }
-      button {
-        font-size: 1.3rem;
-        padding: 6px 10px;
-        min-width: 45px;
-      }
-      h2#monthTitle {
-        font-size: 1.2rem;
-      }
-      #popup {
-        width: 95%;
-        max-width: none;
-        padding: 15px;
-      }
-      #popup input[type="text"] {
-        font-size: 0.95rem;
-      }
-      #popup div label {
-        font-size: 0.9rem;
-      }
-      #popup button {
-        font-size: 1rem;
-        padding: 7px 12px;
-        min-width: 70px;
-      }
-    }
-  </style>
-  <link rel="manifest" href="manifest.json" />
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js');
-    }
-  </script>
-</head>
-<body>
-  <div id="controls">
-    <button onclick="changeMonth(-1)">&lt;</button>
-    <h2 id="monthTitle"></h2>
-    <button onclick="changeMonth(1)">&gt;</button>
-  </div>
-  <table id="calendar"></table>
+<style>
+  /* 기존 스타일 그대로 유지 */
+  /* ... */
+  .holiday {
+    color: red !important;
+    font-weight: 700;
+  }
+  .holiday-name {
+    color: red;
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-top: 22px; /* 메모 위 공간 확보 */
+    white-space: nowrap;
+    user-select: none;
+  }
+  .memo {
+    margin-top: 4px; /* 공휴일명 아래 여백 */
+    font-size: 0.9rem;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+    word-break: break-word;
+    min-height: 40px;
+  }
+</style>
 
-  <div id="overlay"></div>
-  <div id="popup">
-    <b id="popupDate"></b>
-    <input type="text" id="memoInput" placeholder="메모를 입력하세요" maxlength="50" />
-    <div>
-      <label><input type="radio" name="color" value="" /> 없음</label>
-      <label><input type="radio" name="color" value="yellow" /> 노랑</label>
-      <label><input type="radio" name="color" value="blue" /> 파랑</label>
-      <label><input type="radio" name="color" value="gray" /> 회색</label>
-    </div>
-    <div>
-      <b>글자색</b><br />
-      <label><input type="radio" name="memoColor" value="black" checked /> 검정</label>
-      <label><input type="radio" name="memoColor" value="red" /> 빨강</label>
-      <label><input type="radio" name="memoColor" value="blue" /> 파랑</label>
-    </div>
-    <button onclick="saveMemo()">저장</button>
-    <button onclick="closePopup()">취소</button>
-  </div>
+<script>
+  let current = new Date();
+  current.setDate(1);
 
-  <script>
-    let current = new Date();
-    current.setDate(1);
+  const calendar = document.getElementById('calendar');
+  const monthTitle = document.getElementById('monthTitle');
+  const popup = document.getElementById('popup');
+  const overlay = document.getElementById('overlay');
+  const memoInput = document.getElementById('memoInput');
+  const popupDate = document.getElementById('popupDate');
 
-    const calendar = document.getElementById('calendar');
-    const monthTitle = document.getElementById('monthTitle');
-    const popup = document.getElementById('popup');
-    const overlay = document.getElementById('overlay');
-    const memoInput = document.getElementById('memoInput');
-    const popupDate = document.getElementById('popupDate');
+  let selectedDate = '';
 
-    let selectedDate = '';
+  // 법정공휴일 저장용 Map (날짜 -> 공휴일 이름)
+  let holidays = new Map();
 
-    // 법정공휴일 저장용 Set
-    let holidays = new Set();
+  async function fetchHolidays(year, month) {
+    const serviceKey = '8JrZ7bV8ldqfBkPw2jiJG8RBfL559YI%2Fk2FYcNRGLUiIE9XSl7Oae%2BeLSnTOmotMf35yk8pBsSIB0NWvhoJOaw%3D%3D';
 
-    async function fetchHolidays(year, month) {
-      // 월은 1~12로 맞춰야 함
-      // 여기에 공공데이터포털에서 받은 인증키 넣기
-      const serviceKey = '8JrZ7bV8ldqfBkPw2jiJG8RBfL559YI%2Fk2FYcNRGLUiIE9XSl7Oae%2BeLSnTOmotMf35yk8pBsSIB0NWvhoJOaw%3D%3D';
+    const url = `https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?serviceKey=${serviceKey}&solYear=${year}&solMonth=${String(month).padStart(2, '0')}&_type=json`;
 
-      const url = `https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?serviceKey=${serviceKey}&solYear=${year}&solMonth=${String(month).padStart(2, '0')}&_type=json`;
+    try {
+      const res = await fetch(url);
+      if (!res.ok) throw new Error('네트워크 응답 오류');
+      const data = await res.json();
 
-      try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('네트워크 응답 오류');
-        const data = await res.json();
+      holidays.clear();
 
-        holidays.clear();
+      const items = data.response?.body?.items?.item;
 
-        // 데이터 구조: data.response.body.items.item 배열 (공휴일 정보)
-        const items = data.response?.body?.items?.item;
-
-        if (Array.isArray(items)) {
-          for (const day of items) {
-            if (day?.isHoliday === 'Y') {
-              // 날짜는 YYYYMMDD, e.g. 20250717
-              const d = day.locdate.toString();
-              // YYYY-MM-DD 형태로 변환
-              const formatted = `${d.slice(0,4)}-${parseInt(d.slice(4,6))}-${parseInt(d.slice(6,8))}`;
-              holidays.add(formatted);
-            }
+      if (Array.isArray(items)) {
+        for (const day of items) {
+          if (day?.isHoliday === 'Y') {
+            const d = day.locdate.toString();
+            const formatted = `${d.slice(0,4)}-${parseInt(d.slice(4,6))}-${parseInt(d.slice(6,8))}`;
+            holidays.set(formatted, day.dateName);
           }
-        } else if (items && items.isHoliday === 'Y') {
-          const d = items.locdate.toString();
-          const formatted = `${d.slice(0,4)}-${parseInt(d.slice(4,6))}-${parseInt(d.slice(6,8))}`;
-          holidays.add(formatted);
         }
-      } catch (e) {
-        console.error('공휴일 API 호출 실패:', e);
-        holidays.clear();
+      } else if (items && items.isHoliday === 'Y') {
+        const d = items.locdate.toString();
+        const formatted = `${d.slice(0,4)}-${parseInt(d.slice(4,6))}-${parseInt(d.slice(6,8))}`;
+        holidays.set(formatted, items.dateName);
       }
+    } catch (e) {
+      console.error('공휴일 API 호출 실패:', e);
+      holidays.clear();
     }
+  }
 
-    async function buildCalendar() {
-      const year = current.getFullYear();
-      const month = current.getMonth();
+  async function buildCalendar() {
+    const year = current.getFullYear();
+    const month = current.getMonth();
 
-      await fetchHolidays(year, month + 1); // 1-based month
+    await fetchHolidays(year, month + 1);
 
-      monthTitle.innerText = `${year}년 ${month + 1}월`;
+    monthTitle.innerText = `${year}년 ${month + 1}월`;
 
-      let html = '<tr>';
-      ['일', '월', '화', '수', '목', '금', '토'].forEach(
-        (day) => (html += `<th>${day}</th>`)
-      );
-      html += '</tr><tr>';
+    let html = '<tr>';
+    ['일', '월', '화', '수', '목', '금', '토'].forEach(d => html += `<th>${d}</th>`);
+    html += '</tr><tr>';
 
-      const firstDay = new Date(year, month, 1).getDay();
-      const lastDate = new Date(year, month + 1, 0).getDate();
-      const prevLastDate = new Date(year, month, 0).getDate();
-      const startOffset = firstDay;
+    const firstDay = new Date(year, month, 1).getDay();
+    const lastDate = new Date(year, month + 1, 0).getDate();
+    const prevLastDate = new Date(year, month, 0).getDate();
+    const startOffset = firstDay;
 
-      let day = 1;
-      let nextDay = 1;
+    let day = 1;
+    let nextDay = 1;
 
-      for (let i = 0; i < 6 * 7; i++) {
-        let dateClass = '';
-        let displayDate = '';
-        let fullDate = '';
+    for (let i = 0; i < 6 * 7; i++) {
+      let dateClass = '';
+      let displayDate = '';
+      let fullDate = '';
 
-        const weekDay = i % 7;
-        if (i < startOffset) {
-          const prevDate = prevLastDate - startOffset + i + 1;
-          fullDate = `${year}-${month}-${prevDate}`;
-          displayDate = prevDate;
-          dateClass = 'dimmed';
-        } else if (day <= lastDate) {
-          fullDate = `${year}-${month + 1}-${day}`;
-          displayDate = day;
+      const weekDay = i % 7;
 
-          // 법정공휴일 여부 체크해서 holiday 클래스 추가
-          if (holidays.has(fullDate)) {
-            dateClass += ' holiday';
-          } else {
-            if (weekDay === 0) dateClass += ' sun';
-            if (weekDay === 6) dateClass += ' sat';
-          }
+      if (i < startOffset) {
+        const prevDate = prevLastDate - startOffset + i + 1;
+        fullDate = `${year}-${month}-${prevDate}`;
+        displayDate = prevDate;
+        dateClass = 'dimmed';
+      } else if (day <= lastDate) {
+        fullDate = `${year}-${month + 1}-${day}`;
+        displayDate = day;
 
-          day++;
+        if (holidays.has(fullDate)) {
+          dateClass += ' holiday';
         } else {
-          fullDate = `${year}-${month + 2}-${nextDay}`;
-          displayDate = nextDay;
-          nextDay++;
-          dateClass = 'dimmed';
+          if (weekDay === 0) dateClass += ' sun';
+          if (weekDay === 6) dateClass += ' sat';
         }
 
-        const saved = JSON.parse(localStorage.getItem(fullDate) || '{}');
-        const colorClass = saved.color || '';
-        const memo = saved.memo || '';
-        const memoColor = saved.memoColor || 'black';
-
-        html += `<td class="${colorClass}" onclick="openPopup('${fullDate}')">
-                   <div class="date ${dateClass}">${displayDate}</div>
-                   <div class="memo" style="color:${memoColor};">${memo}</div>
-                 </td>`;
-        if (i % 7 === 6) html += '</tr><tr>';
+        day++;
+      } else {
+        fullDate = `${year}-${month + 2}-${nextDay}`;
+        displayDate = nextDay;
+        nextDay++;
+        dateClass = 'dimmed';
       }
 
-      html += '</tr>';
-      calendar.innerHTML = html;
-    }
+      const saved = JSON.parse(localStorage.getItem(fullDate) || '{}');
+      const colorClass = saved.color || '';
+      const memo = saved.memo || '';
+      const memoColor = saved.memoColor || 'black';
 
-    function changeMonth(offset) {
-      const newMonth = new Date(current.getFullYear(), current.getMonth() + offset, 1);
-      if (newMonth.getFullYear() >= 2025) {
-        current = newMonth;
-        buildCalendar();
+      const holidayName = holidays.get(fullDate) || '';
+
+      html += `<td class="${colorClass}" onclick="openPopup('${fullDate}')">
+        <div class="date ${dateClass}">${displayDate}</div>`;
+
+      if (holidayName) {
+        html += `<div class="holiday-name">${holidayName}</div>`;
+        if (memo) {
+          html += `<div class="memo" style="color:${memoColor};">${memo}</div>`;
+        }
+      } else {
+        html += `<div class="memo" style="color:${memoColor};">${memo}</div>`;
       }
+
+      html += `</td>`;
+
+      if (i % 7 === 6) html += '</tr><tr>';
     }
 
-    function openPopup(dateStr) {
-      selectedDate = dateStr;
-      popupDate.innerText = dateStr;
-      const saved = JSON.parse(localStorage.getItem(dateStr) || '{}');
-      memoInput.value = saved.memo || '';
-      document.querySelectorAll('input[name="color"]').forEach((r) => {
-        r.checked = r.value === (saved.color || '');
-      });
-      document.querySelectorAll('input[name="memoColor"]').forEach((r) => {
-        r.checked = r.value === (saved.memoColor || 'black');
-      });
-      popup.style.display = 'block';
-      overlay.style.display = 'block';
-    }
+    html += '</tr>';
+    calendar.innerHTML = html;
+  }
 
-    function closePopup() {
-      popup.style.display = 'none';
-      overlay.style.display = 'none';
-    }
-
-    function saveMemo() {
-      const memo = memoInput.value.trim();
-      const color = document.querySelector('input[name="color"]:checked').value;
-      const memoColor = document.querySelector('input[name="memoColor"]:checked').value;
-
-      localStorage.setItem(
-        selectedDate,
-        JSON.stringify({ memo, color, memoColor })
-      );
-      closePopup();
+  function changeMonth(offset) {
+    const newMonth = new Date(current.getFullYear(), current.getMonth() + offset, 1);
+    if (newMonth.getFullYear() >= 2025) {
+      current = newMonth;
       buildCalendar();
     }
+  }
 
+  function openPopup(dateStr) {
+    selectedDate = dateStr;
+    popupDate.innerText = dateStr;
+    const saved = JSON.parse(localStorage.getItem(dateStr) || '{}');
+    memoInput.value = saved.memo || '';
+    document.querySelectorAll('input[name="color"]').forEach(r => {
+      r.checked = r.value === (saved.color || '');
+    });
+    document.querySelectorAll('input[name="memoColor"]').forEach(r => {
+      r.checked = r.value === (saved.memoColor || 'black');
+    });
+    popup.style.display = 'block';
+    overlay.style.display = 'block';
+  }
+
+  function closePopup() {
+    popup.style.display = 'none';
+    overlay.style.display = 'none';
+  }
+
+  function saveMemo() {
+    const memo = memoInput.value.trim();
+    const color = document.querySelector('input[name="color"]:checked').value;
+    const memoColor = document.querySelector('input[name="memoColor"]:checked').value;
+
+    localStorage.setItem(
+      selectedDate,
+      JSON.stringify({ memo, color, memoColor })
+    );
+    closePopup();
     buildCalendar();
-  </script>
-</body>
-</html>
+  }
+
+  buildCalendar();
+</script>
