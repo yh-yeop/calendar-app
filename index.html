@@ -1,197 +1,133 @@
-<style>
-  /* 기존 스타일 그대로 유지 */
-  /* ... */
-  .holiday {
-    color: red !important;
-    font-weight: 700;
-  }
-  .holiday-name {
-    color: red;
-    font-weight: 700;
-    font-size: 0.9rem;
-    margin-top: 22px; /* 메모 위 공간 확보 */
-    white-space: nowrap;
-    user-select: none;
-  }
-  .memo {
-    margin-top: 4px; /* 공휴일명 아래 여백 */
-    font-size: 0.9rem;
-    white-space: normal;
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-    word-break: break-word;
-    min-height: 40px;
-  }
-</style>
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>달력</title>
+  <style>
+    body {
+      font-family: sans-serif;
+    }
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      max-width: 800px;
+      margin: auto;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      text-align: left;
+      vertical-align: top;
+      padding: 5px;
+      height: 100px;
+    }
+    th {
+      background: #f0f0f0;
+    }
+    .sunday {
+      color: red;
+    }
+    .holiday-name {
+      color: red;
+      font-weight: bold;
+    }
+    .memo {
+      display: block;
+      margin-top: 5px;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1 style="text-align: center;" id="calendar-title">로딩 중...</h1>
+  <table id="calendar"></table>
 
-<script>
-  let current = new Date();
-  current.setDate(1);
+  <script>
+    const API_KEY = '8JrZ7bV8ldqfBkPw2jiJG8RBfL559YI/k2FYcNRGLUiIE9XSl7Oae+eLSnTOmotMf35yk8pBsSIB0NWvhoJOaw==';
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1;
 
-  const calendar = document.getElementById('calendar');
-  const monthTitle = document.getElementById('monthTitle');
-  const popup = document.getElementById('popup');
-  const overlay = document.getElementById('overlay');
-  const memoInput = document.getElementById('memoInput');
-  const popupDate = document.getElementById('popupDate');
+    const memoData = {
+      '2025-07-25': '메모 테스트입니다.\n두 번째 줄입니다.',
+      '2025-08-15': '광복절과 관련된 메모입니다.',
+    };
 
-  let selectedDate = '';
+    const calendarTitle = document.getElementById("calendar-title");
+    const calendar = document.getElementById("calendar");
 
-  // 법정공휴일 저장용 Map (날짜 -> 공휴일 이름)
-  let holidays = new Map();
+    function pad(n) {
+      return n < 10 ? '0' + n : n;
+    }
 
-  async function fetchHolidays(year, month) {
-    const serviceKey = '8JrZ7bV8ldqfBkPw2jiJG8RBfL559YI%2Fk2FYcNRGLUiIE9XSl7Oae%2BeLSnTOmotMf35yk8pBsSIB0NWvhoJOaw%3D%3D';
+    async function fetchHolidays(year, month) {
+      const targetMonth = pad(month);
+      const url = `https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?ServiceKey=${API_KEY}&solYear=${year}&solMonth=${targetMonth}&_type=json`;
 
-    const url = `https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?serviceKey=${serviceKey}&solYear=${year}&solMonth=${String(month).padStart(2, '0')}&_type=json`;
+      try {
+        const res = await fetch(url);
+        const data = await res.json();
+        const items = data.response.body.items?.item || [];
+        const holidays = {};
+        for (const item of Array.isArray(items) ? items : [items]) {
+          holidays[item.locdate.toString().replace(/(\d{4})(\d{2})(\d{2})/, '$1-$2-$3')] = item.dateName;
+        }
+        return holidays;
+      } catch (e) {
+        console.error("공휴일 데이터를 불러오는 중 오류 발생:", e);
+        return {};
+      }
+    }
 
-    try {
-      const res = await fetch(url);
-      if (!res.ok) throw new Error('네트워크 응답 오류');
-      const data = await res.json();
+    function generateCalendar(year, month, holidays) {
+      const firstDay = new Date(year, month - 1, 1);
+      const lastDay = new Date(year, month, 0);
+      const startDay = firstDay.getDay();
+      const totalDays = lastDay.getDate();
 
-      holidays.clear();
+      calendarTitle.textContent = `${year}년 ${month}월`;
 
-      const items = data.response?.body?.items?.item;
+      const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+      let html = '<tr>' + weekdays.map((d, i) => `<th class="${i === 0 ? 'sunday' : ''}">${d}</th>`).join('') + '</tr>';
 
-      if (Array.isArray(items)) {
-        for (const day of items) {
-          if (day?.isHoliday === 'Y') {
-            const d = day.locdate.toString();
-            const formatted = `${d.slice(0,4)}-${parseInt(d.slice(4,6))}-${parseInt(d.slice(6,8))}`;
-            holidays.set(formatted, day.dateName);
+      let date = 1;
+      for (let i = 0; i < 6; i++) {
+        html += '<tr>';
+        for (let j = 0; j < 7; j++) {
+          if (i === 0 && j < startDay) {
+            html += '<td></td>';
+          } else if (date > totalDays) {
+            html += '<td></td>';
+          } else {
+            const fullDate = `${year}-${pad(month)}-${pad(date)}`;
+            const isSunday = j === 0;
+            const holidayName = holidays[fullDate];
+            const memo = memoData[fullDate] || '';
+
+            html += `<td${isSunday || holidayName ? ' class="sunday"' : ''}>`;
+
+            if (holidayName) {
+              html += `<div class="holiday-name">${holidayName}</div>`;
+              if (memo) html += `<div class="memo">${memo}</div>`;
+            } else {
+              html += `<strong>${date}</strong>`;
+              if (memo) html += `<div class="memo">${memo}</div>`;
+            }
+
+            html += '</td>';
+            date++;
           }
         }
-      } else if (items && items.isHoliday === 'Y') {
-        const d = items.locdate.toString();
-        const formatted = `${d.slice(0,4)}-${parseInt(d.slice(4,6))}-${parseInt(d.slice(6,8))}`;
-        holidays.set(formatted, items.dateName);
-      }
-    } catch (e) {
-      console.error('공휴일 API 호출 실패:', e);
-      holidays.clear();
-    }
-  }
-
-  async function buildCalendar() {
-    const year = current.getFullYear();
-    const month = current.getMonth();
-
-    await fetchHolidays(year, month + 1);
-
-    monthTitle.innerText = `${year}년 ${month + 1}월`;
-
-    let html = '<tr>';
-    ['일', '월', '화', '수', '목', '금', '토'].forEach(d => html += `<th>${d}</th>`);
-    html += '</tr><tr>';
-
-    const firstDay = new Date(year, month, 1).getDay();
-    const lastDate = new Date(year, month + 1, 0).getDate();
-    const prevLastDate = new Date(year, month, 0).getDate();
-    const startOffset = firstDay;
-
-    let day = 1;
-    let nextDay = 1;
-
-    for (let i = 0; i < 6 * 7; i++) {
-      let dateClass = '';
-      let displayDate = '';
-      let fullDate = '';
-
-      const weekDay = i % 7;
-
-      if (i < startOffset) {
-        const prevDate = prevLastDate - startOffset + i + 1;
-        fullDate = `${year}-${month}-${prevDate}`;
-        displayDate = prevDate;
-        dateClass = 'dimmed';
-      } else if (day <= lastDate) {
-        fullDate = `${year}-${month + 1}-${day}`;
-        displayDate = day;
-
-        if (holidays.has(fullDate)) {
-          dateClass += ' holiday';
-        } else {
-          if (weekDay === 0) dateClass += ' sun';
-          if (weekDay === 6) dateClass += ' sat';
-        }
-
-        day++;
-      } else {
-        fullDate = `${year}-${month + 2}-${nextDay}`;
-        displayDate = nextDay;
-        nextDay++;
-        dateClass = 'dimmed';
+        html += '</tr>';
+        if (date > totalDays) break;
       }
 
-      const saved = JSON.parse(localStorage.getItem(fullDate) || '{}');
-      const colorClass = saved.color || '';
-      const memo = saved.memo || '';
-      const memoColor = saved.memoColor || 'black';
-
-      const holidayName = holidays.get(fullDate) || '';
-
-      html += `<td class="${colorClass}" onclick="openPopup('${fullDate}')">
-        <div class="date ${dateClass}">${displayDate}</div>`;
-
-      if (holidayName) {
-        html += `<div class="holiday-name">${holidayName}</div>`;
-        if (memo) {
-          html += `<div class="memo" style="color:${memoColor};">${memo}</div>`;
-        }
-      } else {
-        html += `<div class="memo" style="color:${memoColor};">${memo}</div>`;
-      }
-
-      html += `</td>`;
-
-      if (i % 7 === 6) html += '</tr><tr>';
+      calendar.innerHTML = html;
     }
 
-    html += '</tr>';
-    calendar.innerHTML = html;
-  }
-
-  function changeMonth(offset) {
-    const newMonth = new Date(current.getFullYear(), current.getMonth() + offset, 1);
-    if (newMonth.getFullYear() >= 2025) {
-      current = newMonth;
-      buildCalendar();
-    }
-  }
-
-  function openPopup(dateStr) {
-    selectedDate = dateStr;
-    popupDate.innerText = dateStr;
-    const saved = JSON.parse(localStorage.getItem(dateStr) || '{}');
-    memoInput.value = saved.memo || '';
-    document.querySelectorAll('input[name="color"]').forEach(r => {
-      r.checked = r.value === (saved.color || '');
-    });
-    document.querySelectorAll('input[name="memoColor"]').forEach(r => {
-      r.checked = r.value === (saved.memoColor || 'black');
-    });
-    popup.style.display = 'block';
-    overlay.style.display = 'block';
-  }
-
-  function closePopup() {
-    popup.style.display = 'none';
-    overlay.style.display = 'none';
-  }
-
-  function saveMemo() {
-    const memo = memoInput.value.trim();
-    const color = document.querySelector('input[name="color"]:checked').value;
-    const memoColor = document.querySelector('input[name="memoColor"]:checked').value;
-
-    localStorage.setItem(
-      selectedDate,
-      JSON.stringify({ memo, color, memoColor })
-    );
-    closePopup();
-    buildCalendar();
-  }
-
-  buildCalendar();
-</script>
+    (async () => {
+      const holidays = await fetchHolidays(year, month);
+      generateCalendar(year, month, holidays);
+    })();
+  </script>
+</body>
+</html>
