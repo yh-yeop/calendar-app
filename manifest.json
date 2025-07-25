@@ -1,6 +1,6 @@
 {
-  "name": "간단한 일정 캘린더",
-  "short_name": "캘린더",
+  "name": "심캘",
+  "short_name": "심캘",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#ffffff",

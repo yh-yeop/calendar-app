@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>간단한 일정 캘린더</title>
+  <title>심캘</title>
   <style>
     body {
       font-family: sans-serif;
@@ -96,6 +96,11 @@
     }
     .dimmed {
       color: #bbb !important;
+    }
+    /* 법정공휴일 표시용 */
+    .holiday {
+      color: red !important;
+      font-weight: 700;
     }
     #popup {
       position: fixed;
@@ -258,12 +263,52 @@
 
     let selectedDate = '';
 
-    function buildCalendar() {
+    // 법정공휴일 저장용 Set
+    let holidays = new Set();
+
+    async function fetchHolidays(year, month) {
+      // 월은 1~12로 맞춰야 함
+      // 여기에 공공데이터포털에서 받은 인증키 넣기
+      const serviceKey = '8JrZ7bV8ldqfBkPw2jiJG8RBfL559YI%2Fk2FYcNRGLUiIE9XSl7Oae%2BeLSnTOmotMf35yk8pBsSIB0NWvhoJOaw%3D%3D';
+
+      const url = `https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?serviceKey=${serviceKey}&solYear=${year}&solMonth=${String(month).padStart(2, '0')}&_type=json`;
+
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('네트워크 응답 오류');
+        const data = await res.json();
+
+        holidays.clear();
+
+        // 데이터 구조: data.response.body.items.item 배열 (공휴일 정보)
+        const items = data.response?.body?.items?.item;
+
+        if (Array.isArray(items)) {
+          for (const day of items) {
+            if (day?.isHoliday === 'Y') {
+              // 날짜는 YYYYMMDD, e.g. 20250717
+              const d = day.locdate.toString();
+              // YYYY-MM-DD 형태로 변환
+              const formatted = `${d.slice(0,4)}-${parseInt(d.slice(4,6))}-${parseInt(d.slice(6,8))}`;
+              holidays.add(formatted);
+            }
+          }
+        } else if (items && items.isHoliday === 'Y') {
+          const d = items.locdate.toString();
+          const formatted = `${d.slice(0,4)}-${parseInt(d.slice(4,6))}-${parseInt(d.slice(6,8))}`;
+          holidays.add(formatted);
+        }
+      } catch (e) {
+        console.error('공휴일 API 호출 실패:', e);
+        holidays.clear();
+      }
+    }
+
+    async function buildCalendar() {
       const year = current.getFullYear();
       const month = current.getMonth();
 
-      const firstDay = new Date(year, month, 1).getDay();
-      const lastDate = new Date(year, month + 1, 0).getDate();
+      await fetchHolidays(year, month + 1); // 1-based month
 
       monthTitle.innerText = `${year}년 ${month + 1}월`;
 
@@ -273,6 +318,8 @@
       );
       html += '</tr><tr>';
 
+      const firstDay = new Date(year, month, 1).getDay();
+      const lastDate = new Date(year, month + 1, 0).getDate();
       const prevLastDate = new Date(year, month, 0).getDate();
       const startOffset = firstDay;
 
@@ -293,6 +340,15 @@
         } else if (day <= lastDate) {
           fullDate = `${year}-${month + 1}-${day}`;
           displayDate = day;
+
+          // 법정공휴일 여부 체크해서 holiday 클래스 추가
+          if (holidays.has(fullDate)) {
+            dateClass += ' holiday';
+          } else {
+            if (weekDay === 0) dateClass += ' sun';
+            if (weekDay === 6) dateClass += ' sat';
+          }
+
           day++;
         } else {
           fullDate = `${year}-${month + 2}-${nextDay}`;
@@ -305,9 +361,6 @@
         const colorClass = saved.color || '';
         const memo = saved.memo || '';
         const memoColor = saved.memoColor || 'black';
-
-        if (weekDay === 0) dateClass += ' sun';
-        if (weekDay === 6) dateClass += ' sat';
 
         html += `<td class="${colorClass}" onclick="openPopup('${fullDate}')">
                    <div class="date ${dateClass}">${displayDate}</div>
