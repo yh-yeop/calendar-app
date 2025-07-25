@@ -72,12 +72,21 @@
       font-weight: 600;
     }
     .memo {
-      margin-top: 4px;
       font-size: 0.9rem;
       white-space: normal;
       overflow-wrap: break-word;
       word-break: break-word;
       min-height: 40px;
+      /* 공휴일이 없을 때 날짜 아래에 공간 확보 위해 margin-top 조절 */
+      margin-top: 24px; 
+      position: relative;
+      top: 0;
+    }
+    /* 공휴일이 있으면 메모를 조금 아래로 내려줌 */
+    .memo.below-holiday {
+      margin-top: 6px;
+      position: relative;
+      top: 0;
     }
     .holiday-name {
       margin-top: 24px;
@@ -192,9 +201,12 @@
         font-size: 0.9rem;
       }
       .memo {
-        margin-top: 4px;
+        margin-top: 24px;
         font-size: 0.8rem;
         min-height: 35px;
+      }
+      .memo.below-holiday {
+        margin-top: 6px;
       }
       button {
         font-size: 1.3rem;
@@ -369,10 +381,13 @@
         const memoColor = saved.memoColor || 'black';
         const holidayName = holidays.get(fullDate) || '';
 
+        // holidayName 있을 때와 없을 때 메모 CSS 클래스 분기 처리
+        const memoClass = holidayName ? 'memo below-holiday' : 'memo';
+
         html += `<td class="${colorClass}" onclick="openPopup('${fullDate}')">
                    <div class="date ${dateClass}">${displayDate}</div>
                    ${holidayName ? `<div class="holiday-name">${holidayName}</div>` : ''}
-                   <div class="memo" style="color:${memoColor};">${memo}</div>
+                   <div class="${memoClass}" style="color:${memoColor};">${memo}</div>
                  </td>`;
         if (i % 7 === 6) html += '</tr><tr>';
       }
@@ -422,7 +437,7 @@
       buildCalendar();
     }
 
-        function resetAll() {
+    function resetAll() {
       if (confirm('메모와 색깔을 모두 초기화하시겠습니까?')) {
         // 로컬스토리지에서 달력 관련 데이터 모두 삭제
         // 여기선 저장키가 'YYYY-M-D' 형식임을 이용
@@ -437,7 +452,6 @@
         buildCalendar();
       }
     }
-
 
     buildCalendar();
   </script>
