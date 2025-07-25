@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>간단한 일정 캘린더</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      margin: 0;
+      padding: 0 10px;
+      background: #fff;
+    }
+    #controls {
+      margin: 15px 0;
+      user-select: none;
+    }
+    button {
+      font-size: 1.4rem;
+      padding: 8px 15px;
+      margin: 0 5px;
+      border: none;
+      border-radius: 5px;
+      background: #3a86ff;
+      color: white;
+      cursor: pointer;
+      min-width: 50px;
+      transition: background 0.3s;
+    }
+    button:hover {
+      background: #265ddb;
+    }
+    h2#monthTitle {
+      display: inline-block;
+      margin: 0 10px;
+      font-size: 1.5rem;
+    }
+    table {
+      border-collapse: collapse;
+      margin: 0 auto 30px;
+      width: 100%;
+      max-width: 600px;
+      table-layout: fixed;
+    }
+    th, td {
+      border: 1px solid #ccc;
+      vertical-align: top;
+      position: relative;
+      cursor: pointer;
+      word-break: break-word;
+      padding: 4px 6px 6px 6px;
+      user-select: none;
+    }
+    th {
+      height: 30px;
+      font-weight: bold;
+      font-size: 1.1rem;
+      background: #f0f0f0;
+    }
+    td {
+      height: 90px;
+      font-size: 1rem;
+    }
+    .date {
+      position: absolute;
+      top: 4px;
+      left: 6px;
+      font-size: 1rem;
+      color: #999;
+      font-weight: 600;
+    }
+    .memo {
+      margin-top: 24px;
+      font-size: 0.9rem;
+      color: #333;
+      white-space: normal;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+      word-break: break-word;
+      min-height: 40px;
+    }
+    .yellow {
+      background-color: #fff8b3;
+    }
+    .blue {
+      background-color: #b3daff;
+    }
+    .gray {
+      background-color: #e0e0e0;
+    }
+    .sun {
+      color: red !important;
+    }
+    .sat {
+      color: blue !important;
+    }
+    .dimmed {
+      color: #bbb !important;
+    }
+    #popup {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #fff;
+      border: 1px solid #aaa;
+      padding: 20px;
+      box-shadow: 0 0 15px rgba(0,0,0,0.3);
+      display: none;
+      z-index: 1000;
+      width: 90%;
+      max-width: 320px;
+      border-radius: 8px;
+      user-select: text;
+    }
+    #popup b {
+      display: block;
+      margin-bottom: 12px;
+      font-size: 1.1rem;
+    }
+    #popup input[type="text"] {
+      width: 100%;
+      padding: 8px 10px;
+      font-size: 1rem;
+      margin-bottom: 12px;
+      border-radius: 4px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    #popup div label {
+      font-size: 1rem;
+      margin-right: 12px;
+      cursor: pointer;
+      user-select: none;
+    }
+    #popup div input[type="radio"] {
+      cursor: pointer;
+      vertical-align: middle;
+      margin-right: 4px;
+    }
+    #popup button {
+      font-size: 1.1rem;
+      padding: 8px 15px;
+      margin: 6px 6px 0 0;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      min-width: 80px;
+      user-select: none;
+      transition: background 0.3s;
+    }
+    #popup button:first-of-type {
+      background-color: #3a86ff;
+      color: white;
+    }
+    #popup button:first-of-type:hover {
+      background-color: #265ddb;
+    }
+    #popup button:last-of-type {
+      background-color: #ccc;
+    }
+    #popup button:last-of-type:hover {
+      background-color: #999;
+    }
+    #overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      display: none;
+      z-index: 900;
+    }
+
+    /* 모바일용 반응형 */
+    @media (max-width: 480px) {
+      th, td {
+        font-size: 0.85rem;
+        height: 70px;
+        padding: 2px 4px 4px 4px;
+      }
+      .date {
+        font-size: 0.9rem;
+      }
+      .memo {
+        margin-top: 20px;
+        font-size: 0.8rem;
+        min-height: 35px;
+      }
+      button {
+        font-size: 1.3rem;
+        padding: 6px 10px;
+        min-width: 45px;
+      }
+      h2#monthTitle {
+        font-size: 1.2rem;
+      }
+      #popup {
+        width: 95%;
+        max-width: none;
+        padding: 15px;
+      }
+      #popup input[type="text"] {
+        font-size: 0.95rem;
+      }
+      #popup div label {
+        font-size: 0.9rem;
+      }
+      #popup button {
+        font-size: 1rem;
+        padding: 7px 12px;
+        min-width: 70px;
+      }
+    }
+  </style>
+    <link rel="manifest" href="manifest.json" />
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js');
+    }
+  </script>
+</head>
+<body>
+  <div id="controls">
+    <button onclick="changeMonth(-1)">&lt;</button>
+    <h2 id="monthTitle"></h2>
+    <button onclick="changeMonth(1)">&gt;</button>
+  </div>
+  <table id="calendar"></table>
+
+  <div id="overlay"></div>
+  <div id="popup">
+    <b id="popupDate"></b>
+    <input type="text" id="memoInput" placeholder="메모를 입력하세요" maxlength="50" />
+    <div>
+      <label><input type="radio" name="color" value="yellow" checked /> 노랑</label>
+      <label><input type="radio" name="color" value="blue" /> 파랑</label>
+      <label><input type="radio" name="color" value="gray" /> 회색</label>
+    </div>
+    <button onclick="saveMemo()">저장</button>
+    <button onclick="closePopup()">취소</button>
+  </div>
+
+  <script>
+    let current = new Date();
+    current.setDate(1);
+
+    const calendar = document.getElementById('calendar');
+    const monthTitle = document.getElementById('monthTitle');
+    const popup = document.getElementById('popup');
+    const overlay = document.getElementById('overlay');
+    const memoInput = document.getElementById('memoInput');
+    const popupDate = document.getElementById('popupDate');
+
+    let selectedDate = '';
+
+    function buildCalendar() {
+      const year = current.getFullYear();
+      const month = current.getMonth();
+
+      const firstDay = new Date(year, month, 1).getDay();
+      const lastDate = new Date(year, month + 1, 0).getDate();
+
+      monthTitle.innerText = `${year}년 ${month + 1}월`;
+
+      let html = '<tr>';
+      ['일', '월', '화', '수', '목', '금', '토'].forEach(
+        (day) => (html += `<th>${day}</th>`)
+      );
+      html += '</tr><tr>';
+
+      const prevLastDate = new Date(year, month, 0).getDate();
+      const startOffset = firstDay;
+
+      let day = 1;
+      let nextDay = 1;
+
+      for (let i = 0; i < 6 * 7; i++) {
+        let dateClass = '';
+        let displayDate = '';
+        let fullDate = '';
+
+        const weekDay = i % 7;
+        if (i < startOffset) {
+          const prevDate = prevLastDate - startOffset + i + 1;
+          fullDate = `${year}-${month}-${prevDate}`;
+          displayDate = prevDate;
+          dateClass = 'dimmed';
+        } else if (day <= lastDate) {
+          fullDate = `${year}-${month + 1}-${day}`;
+          displayDate = day;
+          day++;
+        } else {
+          fullDate = `${year}-${month + 2}-${nextDay}`;
+          displayDate = nextDay;
+          nextDay++;
+          dateClass = 'dimmed';
+        }
+
+        const saved = JSON.parse(localStorage.getItem(fullDate) || '{}');
+        const colorClass = saved.color || '';
+        const memo = saved.memo || '';
+        if (weekDay === 0) dateClass += ' sun';
+        if (weekDay === 6) dateClass += ' sat';
+
+        html += `<td class="${colorClass}" onclick="openPopup('${fullDate}')">
+                   <div class="date ${dateClass}">${displayDate}</div>
+                   <div class="memo">${memo}</div>
+                 </td>`;
+        if (i % 7 === 6) html += '</tr><tr>';
+      }
+
+      html += '</tr>';
+      calendar.innerHTML = html;
+    }
+
+    function changeMonth(offset) {
+      const newMonth = new Date(current.getFullYear(), current.getMonth() + offset, 1);
+      if (newMonth.getFullYear() >= 2025) {
+        current = newMonth;
+        buildCalendar();
+      }
+    }
+
+    function openPopup(dateStr) {
+      selectedDate = dateStr;
+      popupDate.innerText = dateStr;
+      const saved = JSON.parse(localStorage.getItem(dateStr) || '{}');
+      memoInput.value = saved.memo || '';
+      document.querySelectorAll('input[name="color"]').forEach((r) => {
+        r.checked = r.value === saved.color;
+      });
+      popup.style.display = 'block';
+      overlay.style.display = 'block';
+    }
+
+    function closePopup() {
+      popup.style.display = 'none';
+      overlay.style.display = 'none';
+    }
+
+    function saveMemo() {
+      const memo = memoInput.value.trim();
+      const color = document.querySelector('input[name="color"]:checked').value;
+      localStorage.setItem(selectedDate, JSON.stringify({ memo, color }));
+      closePopup();
+      buildCalendar();
+    }
+
+    buildCalendar();
+  </script>
+</body>
+</html>
