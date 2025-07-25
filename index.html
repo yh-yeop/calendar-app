@@ -230,11 +230,16 @@
   </script>
 </head>
 <body>
-  <div id="controls">
-    <button onclick="changeMonth(-1)">&lt;</button>
-    <h2 id="monthTitle"></h2>
-    <button onclick="changeMonth(1)">&gt;</button>
-  </div>
+    <div id="topControls" style="display: flex; justify-content: flex-start; margin: 15px 0; user-select: none;">
+      <button onclick="resetAll()" style="position: fixed; top: 10px; left: 10px; background: #ff4d4d; color: white; border: none; border-radius: 5px; padding: 4px 10px; font-size: 1rem; cursor: pointer; z-index: 1100; user-select: none;">
+        초기화
+      </button>
+    </div>
+    <div id="controls" style="display: flex; justify-content: center; align-items: center; gap: 10px; margin: 50px 0 15px 0; user-select: none;">
+      <button onclick="changeMonth(-1)" style="min-width: 40px; padding: 6px 10px;">&lt;</button>
+      <h2 id="monthTitle" style="margin: 0 10px; font-size: 1.5rem;"></h2>
+      <button onclick="changeMonth(1)" style="min-width: 40px; padding: 6px 10px;">&gt;</button>
+    </div>
   <table id="calendar"></table>
 
   <div id="overlay"></div>
@@ -289,6 +294,7 @@
           for (const day of items) {
             if (day?.isHoliday === 'Y') {
               const d = day.locdate.toString();
+              // 공휴일 키는 YYYY-M-D (0채움 없이)
               const formatted = `${d.slice(0,4)}-${parseInt(d.slice(4,6))}-${parseInt(d.slice(6,8))}`;
               holidays.set(formatted, day.dateName);
             }
@@ -356,6 +362,7 @@
           dateClass = 'dimmed';
         }
 
+        // 저장 데이터 읽기
         const saved = JSON.parse(localStorage.getItem(fullDate) || '{}');
         const colorClass = saved.color || '';
         const memo = saved.memo || '';
@@ -414,6 +421,23 @@
       closePopup();
       buildCalendar();
     }
+
+        function resetAll() {
+      if (confirm('메모와 색깔을 모두 초기화하시겠습니까?')) {
+        // 로컬스토리지에서 달력 관련 데이터 모두 삭제
+        // 여기선 저장키가 'YYYY-M-D' 형식임을 이용
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(key)) {
+            localStorage.removeItem(key);
+            // localStorage 길이 변해서 인덱스 주의 필요
+            i--;
+          }
+        }
+        buildCalendar();
+      }
+    }
+
 
     buildCalendar();
   </script>
