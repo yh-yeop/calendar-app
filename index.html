@@ -73,7 +73,6 @@
     .memo {
       margin-top: 24px;
       font-size: 0.9rem;
-      color: #333;
       white-space: normal;
       overflow-wrap: break-word;
       word-wrap: break-word;
@@ -170,7 +169,6 @@
       display: none;
       z-index: 900;
     }
-
     /* 모바일용 반응형 */
     @media (max-width: 480px) {
       th, td {
@@ -212,7 +210,7 @@
       }
     }
   </style>
-    <link rel="manifest" href="manifest.json" />
+  <link rel="manifest" href="manifest.json" />
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js');
@@ -232,9 +230,16 @@
     <b id="popupDate"></b>
     <input type="text" id="memoInput" placeholder="메모를 입력하세요" maxlength="50" />
     <div>
-      <label><input type="radio" name="color" value="yellow" checked /> 노랑</label>
+      <label><input type="radio" name="color" value="" /> 없음</label>
+      <label><input type="radio" name="color" value="yellow" /> 노랑</label>
       <label><input type="radio" name="color" value="blue" /> 파랑</label>
       <label><input type="radio" name="color" value="gray" /> 회색</label>
+    </div>
+    <div>
+      <b>글자색</b><br />
+      <label><input type="radio" name="memoColor" value="black" checked /> 검정</label>
+      <label><input type="radio" name="memoColor" value="red" /> 빨강</label>
+      <label><input type="radio" name="memoColor" value="blue" /> 파랑</label>
     </div>
     <button onclick="saveMemo()">저장</button>
     <button onclick="closePopup()">취소</button>
@@ -299,12 +304,14 @@
         const saved = JSON.parse(localStorage.getItem(fullDate) || '{}');
         const colorClass = saved.color || '';
         const memo = saved.memo || '';
+        const memoColor = saved.memoColor || 'black';
+
         if (weekDay === 0) dateClass += ' sun';
         if (weekDay === 6) dateClass += ' sat';
 
         html += `<td class="${colorClass}" onclick="openPopup('${fullDate}')">
                    <div class="date ${dateClass}">${displayDate}</div>
-                   <div class="memo">${memo}</div>
+                   <div class="memo" style="color:${memoColor};">${memo}</div>
                  </td>`;
         if (i % 7 === 6) html += '</tr><tr>';
       }
@@ -327,7 +334,10 @@
       const saved = JSON.parse(localStorage.getItem(dateStr) || '{}');
       memoInput.value = saved.memo || '';
       document.querySelectorAll('input[name="color"]').forEach((r) => {
-        r.checked = r.value === saved.color;
+        r.checked = r.value === (saved.color || '');
+      });
+      document.querySelectorAll('input[name="memoColor"]').forEach((r) => {
+        r.checked = r.value === (saved.memoColor || 'black');
       });
       popup.style.display = 'block';
       overlay.style.display = 'block';
@@ -341,7 +351,12 @@
     function saveMemo() {
       const memo = memoInput.value.trim();
       const color = document.querySelector('input[name="color"]:checked').value;
-      localStorage.setItem(selectedDate, JSON.stringify({ memo, color }));
+      const memoColor = document.querySelector('input[name="memoColor"]:checked').value;
+
+      localStorage.setItem(
+        selectedDate,
+        JSON.stringify({ memo, color, memoColor })
+      );
       closePopup();
       buildCalendar();
     }
