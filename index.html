@@ -380,7 +380,10 @@
         const colorClass = saved.color || '';
         const memo = saved.memo || '';
         const memoColor = saved.memoColor || 'black';
-        const holidayName = holidays.get(fullDate) || '';
+
+        const rawHolidayName = holidays.get(fullDate) || '';
+
+          const holidayName = rawHolidayName.includes('임시공휴일') ? '임시공휴일' : rawHolidayName;
 
         // holidayName 있을 때와 없을 때 메모 CSS 클래스 분기 처리
         const memoClass = holidayName ? 'memo below-holiday' : 'memo';
