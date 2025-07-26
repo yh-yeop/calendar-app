@@ -58,8 +58,6 @@ async function buildCalendar() {
 
   monthTitle.innerText = `${year}년 ${month + 1}월`;
 
-  calendar.style.visibility = 'hidden'; //  렌더 전 숨기기
-
   let html = '<tr>';
   ['일', '월', '화', '수', '목', '금', '토'].forEach(
     (day) => (html += `<th>${day}</th>`)
@@ -104,6 +102,7 @@ async function buildCalendar() {
       dateClass = 'dimmed';
     }
 
+    // 저장 데이터 읽기
     const saved = JSON.parse(localStorage.getItem(fullDate) || '{}');
     const colorClass = saved.color || '';
     const memo = saved.memo || '';
@@ -112,6 +111,7 @@ async function buildCalendar() {
     const rawHolidayName = holidays.get(fullDate) || '';
     const holidayName = rawHolidayName.includes('임시공휴일') ? '임시공휴일' : rawHolidayName;
 
+    // holidayName 있을 때와 없을 때 메모 CSS 클래스 분기 처리
     const memoClass = holidayName ? 'memo below-holiday' : 'memo';
 
     html += `<td class="${colorClass}" onclick="openPopup('${fullDate}')">
@@ -119,38 +119,35 @@ async function buildCalendar() {
                ${holidayName ? `<div class="holiday-name">${holidayName}</div>` : ''}
                <div class="${memoClass}" style="color:${memoColor};">${memo}</div>
              </td>`;
-
     if (i % 7 === 6) html += '</tr><tr>';
   }
 
   html += '</tr>';
   calendar.innerHTML = html;
 
-  // 렌더 완료 후 margin-top 보정 → 그리고 다시 보이기
-  requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      const tds = calendar.querySelectorAll('td');
-      tds.forEach(td => {
+    const tds = calendar.querySelectorAll('td');
+
+    tds.forEach(td => {
         const holidayNameEl = td.querySelector('.holiday-name');
         const memoEl = td.querySelector('.memo');
 
         if (memoEl) {
-          const baseMarginTop = 20;
-          if (holidayNameEl) {
+        const isMobile = window.innerWidth <= 480;
+        const baseMarginTop = isMobile ? 20 : 20;
+
+        if (holidayNameEl) {
             const holidayHeight = holidayNameEl.offsetHeight;
             const newMarginTop = baseMarginTop - holidayHeight;
             memoEl.style.marginTop = (newMarginTop > 0 ? newMarginTop : 0) + 'px';
-          } else {
+        } else {
             memoEl.style.marginTop = baseMarginTop + 'px';
-          }
         }
-      });
-
-      calendar.style.visibility = 'visible'; //  깜빡임 방지: 수정 완료 후 보이기
+        }
     });
   });
-}
 
+}
 
 function changeMonth(offset) {
   const newMonth = new Date(current.getFullYear(), current.getMonth() + offset, 1);
