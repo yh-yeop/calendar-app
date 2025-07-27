@@ -86,7 +86,7 @@ th {
 }
 
 td {
-  height: auto;
+  height: 90px;
   min-height: 90px;
   font-size: 1rem;
 }
@@ -239,6 +239,13 @@ td {
   display: none;
   z-index: 900;
 }
+.today .date {
+  background-color: black;
+  color: white !important;
+  border-radius: 50%;
+  padding: 2px 6px;
+  display: inline-block;
+}
 
 @media (max-width: 480px) {
   th, td {
@@ -286,4 +293,11 @@ td {
     padding: 7px 12px;
     min-width: 70px;
   }
+}
+.date.today {
+  background-color: black  !important;
+  color: white !important;
+  border-radius: 12px;
+  padding: 1px 4px;
+  display: inline-block;
 }

@@ -35,13 +35,13 @@ async function fetchHolidays(year, month) {
       for (const day of items) {
         if (day?.isHoliday === 'Y') {
           const d = day.locdate.toString();
-          const formatted = `${d.slice(0,4)}-${parseInt(d.slice(4,6))}-${parseInt(d.slice(6,8))}`;
+          const formatted = `${d.slice(0,4)}-${String(parseInt(d.slice(4,6))).padStart(2,'0')}-${String(parseInt(d.slice(6,8))).padStart(2,'0')}`;
           holidays.set(formatted, day.dateName);
         }
       }
     } else if (items && items.isHoliday === 'Y') {
       const d = items.locdate.toString();
-      const formatted = `${d.slice(0,4)}-${parseInt(d.slice(4,6))}-${parseInt(d.slice(6,8))}`;
+      const formatted = `${d.slice(0,4)}-${String(parseInt(d.slice(4,6))).padStart(2,'0')}-${String(parseInt(d.slice(6,8))).padStart(2,'0')}`;
       holidays.set(formatted, items.dateName);
     }
   } catch (e) {
@@ -53,6 +53,9 @@ async function fetchHolidays(year, month) {
 async function buildCalendar() {
   const year = current.getFullYear();
   const month = current.getMonth();
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
 
   await fetchHolidays(year, month + 1);
 
@@ -80,11 +83,11 @@ async function buildCalendar() {
     const weekDay = i % 7;
     if (i < startOffset) {
       const prevDate = prevLastDate - startOffset + i + 1;
-      fullDate = `${year}-${month}-${prevDate}`;
+      fullDate = `${year}-${String(month).padStart(2,'0')}-${String(prevDate).padStart(2,'0')}`;
       displayDate = prevDate;
       dateClass = 'dimmed';
     } else if (day <= lastDate) {
-      fullDate = `${year}-${month + 1}-${day}`;
+      fullDate = `${year}-${String(month + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
       displayDate = day;
 
       if (holidays.has(fullDate)) {
@@ -96,7 +99,7 @@ async function buildCalendar() {
 
       day++;
     } else {
-      fullDate = `${year}-${month + 2}-${nextDay}`;
+      fullDate = `${year}-${String(month + 2).padStart(2,'0')}-${String(nextDay).padStart(2,'0')}`;
       displayDate = nextDay;
       nextDay++;
       dateClass = 'dimmed';
@@ -110,6 +113,10 @@ async function buildCalendar() {
 
     const rawHolidayName = holidays.get(fullDate) || '';
     const holidayName = rawHolidayName.includes('임시공휴일') ? '임시공휴일' : rawHolidayName;
+
+    if (fullDate === todayStr) {
+      dateClass += ' today';
+    }
 
     // holidayName 있을 때와 없을 때 메모 CSS 클래스 분기 처리
     const memoClass = holidayName ? 'memo below-holiday' : 'memo';
@@ -125,33 +132,33 @@ async function buildCalendar() {
   html += '</tr>';
   calendar.innerHTML = html;
 
-    requestAnimationFrame(() => {
+  requestAnimationFrame(() => {
     const tds = calendar.querySelectorAll('td');
 
     tds.forEach(td => {
-        const holidayNameEl = td.querySelector('.holiday-name');
-        const memoEl = td.querySelector('.memo');
+      const holidayNameEl = td.querySelector('.holiday-name');
+      const memoEl = td.querySelector('.memo');
 
-        if (memoEl) {
+      if (memoEl) {
         const isMobile = window.innerWidth <= 480;
         const baseMarginTop = isMobile ? 20 : 20;
 
         if (holidayNameEl) {
-            const holidayHeight = holidayNameEl.offsetHeight;
-            const newMarginTop = baseMarginTop - holidayHeight;
-            memoEl.style.marginTop = (newMarginTop > 0 ? newMarginTop : 0) + 'px';
+          const holidayHeight = holidayNameEl.offsetHeight;
+          const newMarginTop = baseMarginTop - holidayHeight;
+          memoEl.style.marginTop = (newMarginTop > 0 ? newMarginTop : 0) + 'px';
         } else {
-            memoEl.style.marginTop = baseMarginTop + 'px';
+          memoEl.style.marginTop = baseMarginTop + 'px';
         }
-        }
+      }
     });
   });
-
 }
 
 function changeMonth(offset) {
   const newMonth = new Date(current.getFullYear(), current.getMonth() + offset, 1);
-  if (newMonth.getFullYear() >= 2025) {
+  // 2025년 이전까지 허용
+  if (newMonth.getFullYear() <= 2025) {
     current = newMonth;
     buildCalendar();
   }
@@ -194,7 +201,7 @@ function resetAll() {
   if (confirm('메모와 색깔을 모두 초기화하시겠습니까?')) {
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(key)) {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(key)) {
         localStorage.removeItem(key);
         i--;
       }
