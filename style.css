@@ -8,7 +8,8 @@ body {
 
 #topControls {
   display: flex;
-  justify-content: flex-start;
+  justify-content: space-between; /* 좌우 끝으로 배치 */
+  width: 140px; /* 버튼 두 개 들어갈 너비, 필요 시 조절 */
   margin: 15px 0;
   user-select: none;
   position: fixed;
@@ -17,15 +18,62 @@ body {
   z-index: 1100;
 }
 
-#topControls button {
+/* 초기화 버튼 스타일 */
+#resetBtn {
+  height: 32px; /* 초기화 버튼 높이 */
+  line-height: 32px;
+  font-size: 1rem;
+  padding: 0 10px;
+  border-radius: 5px;
+  user-select: none;
+  cursor: pointer;
+  border: none;
   background: #ff4d4d;
   color: white;
-  border: none;
-  border-radius: 5px;
-  padding: 4px 10px;
+  transition: background 0.3s;
+}
+
+#resetBtn:hover {
+  background: #d94444;
+}
+
+/* 오늘 버튼 스타일 */
+#todayBtn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  font-weight: 700;
   font-size: 1rem;
-  cursor: pointer;
+  border-radius: 5px;
+  border: 2px solid black;  /* 검정 테두리 */
+  background: transparent;   /* 배경 투명 */
+  color: black;              /* 글자색 검정 */
+  display: flex;
+  justify-content: center;
+  align-items: center;
   user-select: none;
+  cursor: pointer;
+  transition: background-color 0.3s, color 0.3s;
+  margin-left: 0; /* 초기화 버튼과 별도로 붙는 margin 없음 */
+}
+
+#todayBtn:hover {
+  background-color: black;
+  color: white;
+}
+
+
+#customConfirm {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #fff;
+  border: 1px solid #aaa;
+  padding: 20px;
+  z-index: 2000;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
 }
 
 #controls {
@@ -106,7 +154,6 @@ td {
   overflow-wrap: break-word;
   word-break: break-word;
   min-height: 40px;
-  /* margin-top: 24px; */
   position: relative;
   top: 0;
 }
@@ -239,6 +286,7 @@ td {
   display: none;
   z-index: 900;
 }
+
 .date.today {
   background-color: black  !important;
   color: white !important;
@@ -260,7 +308,6 @@ td {
     font-size: 0.9rem;
   }
   .memo {
-    /* margin-top: 24px; */
     font-size: 0.8rem;
     min-height: 35px;
   }
