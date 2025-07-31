@@ -157,11 +157,11 @@ async function buildCalendar() {
 
 function changeMonth(offset) {
   const newMonth = new Date(current.getFullYear(), current.getMonth() + offset, 1);
-  // 2025년 이전까지 허용
-  if (newMonth.getFullYear() <= 2025) {
+    // 연도 제한코드
+  // if (newMonth.getFullYear() <= 2025) {
     current = newMonth;
     buildCalendar();
-  }
+  // }
 }
 
 function openPopup(dateStr) {
