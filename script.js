@@ -112,7 +112,10 @@ async function buildCalendar() {
     const memoColor = saved.memoColor || 'black';
 
     const rawHolidayName = holidays.get(fullDate) || '';
-    const holidayName = rawHolidayName.includes('임시공휴일') ? '임시공휴일' : rawHolidayName;
+    const holidayName =
+      rawHolidayName.includes('임시공휴일') ? '임시공휴일' :
+      rawHolidayName.includes('대체공휴일') ? '대체공휴일' :
+      rawHolidayName;
 
     if (fullDate === todayStr) {
       dateClass += ' today';
