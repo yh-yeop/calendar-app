@@ -39,6 +39,9 @@ body {
 
 /* 오늘 버튼 스타일 */
 #todayBtn {
+  position: fixed;
+  top: 10px;
+  right: 30px;  /* 오른쪽 상단으로 이동 */
   width: 32px;
   height: 32px;
   padding: 0;
