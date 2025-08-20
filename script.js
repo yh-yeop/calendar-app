@@ -9,10 +9,14 @@ const memoInput = document.getElementById('memoInput');
 const popupDate = document.getElementById('popupDate');
 
 const resetBtn = document.getElementById('resetBtn');
+const todayBtn = document.getElementById('todayBtn');
 const prevMonthBtn = document.getElementById('prevMonthBtn');
 const nextMonthBtn = document.getElementById('nextMonthBtn');
 const saveBtn = document.getElementById('saveBtn');
 const cancelBtn = document.getElementById('cancelBtn');
+
+const confirmYes = document.getElementById('confirmYes');
+const confirmNo = document.getElementById('confirmNo');
 
 let selectedDate = '';
 
@@ -26,8 +30,6 @@ async function fetchHolidays(year, month) {
     const res = await fetch(url);
     if (!res.ok) throw new Error('네트워크 응답 오류');
     const data = await res.json();
-
-    holidays.clear();
 
     const items = data.response?.body?.items?.item;
 
@@ -46,8 +48,18 @@ async function fetchHolidays(year, month) {
     }
   } catch (e) {
     console.error('공휴일 API 호출 실패:', e);
-    holidays.clear();
   }
+}
+
+async function fetchHolidaysFor3Months(year, month) {
+  holidays.clear();
+  const prevMonthDate = new Date(year, month - 2, 1);
+  const thisMonthDate = new Date(year, month - 1, 1);
+  const nextMonthDate = new Date(year, month, 1);
+
+  await fetchHolidays(prevMonthDate.getFullYear(), prevMonthDate.getMonth() + 1);
+  await fetchHolidays(thisMonthDate.getFullYear(), thisMonthDate.getMonth() + 1);
+  await fetchHolidays(nextMonthDate.getFullYear(), nextMonthDate.getMonth() + 1);
 }
 
 async function buildCalendar() {
@@ -57,7 +69,7 @@ async function buildCalendar() {
   const today = new Date();
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
 
-  await fetchHolidays(year, month + 1);
+  await fetchHolidaysFor3Months(year, month + 1);
 
   monthTitle.innerText = `${year}년 ${month + 1}월`;
 
@@ -105,20 +117,21 @@ async function buildCalendar() {
       dateClass = 'dimmed';
     }
 
-    // 저장 데이터 읽기
     const saved = JSON.parse(localStorage.getItem(fullDate) || '{}');
     const colorClass = saved.color || '';
     const memo = saved.memo || '';
     const memoColor = saved.memoColor || 'black';
 
     const rawHolidayName = holidays.get(fullDate) || '';
-    const holidayName = rawHolidayName.includes('임시공휴일') ? '임시공휴일' : rawHolidayName;
+    const holidayName =
+      rawHolidayName.includes('임시공휴일') ? '임시공휴일' :
+      rawHolidayName.includes('대체공휴일') ? '대체공휴일' :
+      rawHolidayName;
 
     if (fullDate === todayStr) {
       dateClass += ' today';
     }
 
-    // holidayName 있을 때와 없을 때 메모 CSS 클래스 분기 처리
     const memoClass = holidayName ? 'memo below-holiday' : 'memo';
 
     html += `<td class="${colorClass}" onclick="openPopup('${fullDate}')">
@@ -157,10 +170,15 @@ async function buildCalendar() {
 
 function changeMonth(offset) {
   const newMonth = new Date(current.getFullYear(), current.getMonth() + offset, 1);
+<<<<<<< HEAD
   if (newMonth.getFullYear() <= 2030) {
     current = newMonth;
     buildCalendar();
   }
+=======
+  current = newMonth;
+  buildCalendar();
+>>>>>>> e6e61f18d141cb58521e8cf99e4acc2f3653bd1f
 }
 
 function openPopup(dateStr) {
@@ -196,24 +214,56 @@ function saveMemo() {
   buildCalendar();
 }
 
-function resetAll() {
-  if (confirm('메모와 색깔을 모두 초기화하시겠습니까?')) {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (/^\d{4}-\d{2}-\d{2}$/.test(key)) {
-        localStorage.removeItem(key);
-        i--;
-      }
-    }
-    buildCalendar();
-  }
+function showResetConfirm() {
+  const confirmBox = document.getElementById('customConfirm');
+  confirmBox.style.display = 'block';
+  overlay.style.display = 'block';
 }
 
-resetBtn.addEventListener('click', resetAll);
+function hideResetConfirm() {
+  const confirmBox = document.getElementById('customConfirm');
+  confirmBox.style.display = 'none';
+  overlay.style.display = 'none';
+}
+
+function resetAllConfirmed() {
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(key)) {
+      localStorage.removeItem(key);
+      i--;
+    }
+  }
+  hideResetConfirm();
+  buildCalendar();
+}
+
+resetBtn.addEventListener('click', showResetConfirm);
+
+const today = new Date();
+todayBtn.textContent = today.getDate();
+
+function goToToday() {
+  current = new Date(today.getFullYear(), today.getMonth(), 1);
+  buildCalendar();
+}
+
+todayBtn.addEventListener('click', goToToday);
+
 prevMonthBtn.addEventListener('click', () => changeMonth(-1));
 nextMonthBtn.addEventListener('click', () => changeMonth(1));
 saveBtn.addEventListener('click', saveMemo);
 cancelBtn.addEventListener('click', closePopup);
-overlay.addEventListener('click', closePopup);
+
+confirmYes.addEventListener('click', resetAllConfirmed);
+confirmNo.addEventListener('click', hideResetConfirm);
+
+overlay.addEventListener('click', () => {
+  if (document.getElementById('customConfirm').style.display === 'block') {
+    hideResetConfirm();
+  } else {
+    closePopup();
+  }
+});
 
 buildCalendar();
