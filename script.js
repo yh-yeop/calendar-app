@@ -22,9 +22,13 @@ let selectedDate = '';
 
 let holidays = new Map();
 
+let url1=0
+
 async function fetchHolidays(year, month) {
   const serviceKey = '8JrZ7bV8ldqfBkPw2jiJG8RBfL559YI%2Fk2FYcNRGLUiIE9XSl7Oae%2BeLSnTOmotMf35yk8pBsSIB0NWvhoJOaw%3D%3D';
-  const url = `https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?serviceKey=${serviceKey}&solYear=${year}&solMonth=${String(month).padStart(2, '0')}&_type=json`;
+  
+  const url = `https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo?serviceKey={serviceKey}&solYear={year}&solMonth=${String(month).padStart(2, '0')}&_type=json`;
+  url1=url
 
   try {
     const res = await fetch(url);
@@ -170,15 +174,12 @@ async function buildCalendar() {
 
 function changeMonth(offset) {
   const newMonth = new Date(current.getFullYear(), current.getMonth() + offset, 1);
-<<<<<<< HEAD
   if (newMonth.getFullYear() <= 2030) {
     current = newMonth;
     buildCalendar();
   }
-=======
   current = newMonth;
   buildCalendar();
->>>>>>> e6e61f18d141cb58521e8cf99e4acc2f3653bd1f
 }
 
 function openPopup(dateStr) {
