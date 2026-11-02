@@ -1,7 +1,10 @@
 {
   "name": "심캘",
   "short_name": "심캘",
+  "description": "공휴일과 짧은 메모만 담는 간단한 일정 달력",
+  "lang": "ko",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#3a86ff",
@@ -14,7 +17,8 @@
     {
       "src": "icon.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any"
     }
   ]
 }

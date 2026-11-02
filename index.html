@@ -2,58 +2,194 @@
 <html lang="ko">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#3a86ff" />
   <title>심캘</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="icon.png" />
+  <script>
+    // 첫 페인트 전에 테마를 적용해 깜빡임을 막는다.
+    try {
+      var t = localStorage.getItem('sc:theme');
+      if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    } catch (e) {}
+  </script>
+</head>
+<body>
+  <header class="appbar">
+    <button id="todayBtn" class="today-btn" type="button" aria-label="오늘로 이동" title="오늘로 이동"></button>
+    <div class="month-nav">
+      <button id="prevMonthBtn" class="nav-btn" type="button" aria-label="이전 달">&#8249;</button>
+      <h1 id="monthTitle" aria-live="polite"></h1>
+      <button id="nextMonthBtn" class="nav-btn" type="button" aria-label="다음 달">&#8250;</button>
+    </div>
+    <button id="menuBtn" class="icon-btn" type="button" aria-label="설정" title="설정">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </button>
+  </header>
+
+  <nav id="profileBar" class="profile-bar" aria-label="프로필"></nav>
+
+  <main>
+    <table id="calendar" aria-label="달력">
+      <thead>
+        <tr>
+          <th class="sun">일</th><th>월</th><th>화</th><th>수</th><th>목</th><th>금</th><th class="sat">토</th>
+        </tr>
+      </thead>
+      <tbody id="calendarBody"></tbody>
+    </table>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <!-- 일정 편집 -->
+  <dialog id="editDialog" class="sheet" aria-labelledby="editTitle">
+    <form id="editForm" method="dialog">
+      <div class="sheet-head">
+        <h2 id="editTitle"></h2>
+        <p id="editHoliday" class="holiday-sub"></p>
+      </div>
+      <input type="text" id="memoInput" aria-label="메모" placeholder="메모를 입력하세요" maxlength="50" autocomplete="off" enterkeyhint="done" />
+      <p id="memoCount" class="hint align-end"></p>
+
+      <fieldset>
+        <legend>배경색</legend>
+        <div class="swatches" id="bgSwatches">
+          <label class="swatch bg-none"><input type="radio" name="color" value="" /><span>없음</span></label>
+          <label class="swatch bg-yellow"><input type="radio" name="color" value="yellow" /><span>노랑</span></label>
+          <label class="swatch bg-blue"><input type="radio" name="color" value="blue" /><span>파랑</span></label>
+          <label class="swatch bg-green"><input type="radio" name="color" value="green" /><span>초록</span></label>
+          <label class="swatch bg-pink"><input type="radio" name="color" value="pink" /><span>분홍</span></label>
+          <label class="swatch bg-gray"><input type="radio" name="color" value="gray" /><span>회색</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>글자색</legend>
+        <div class="chips">
+          <label class="chip"><input type="radio" name="memoColor" value="" /><span class="fg-default">기본</span></label>
+          <label class="chip"><input type="radio" name="memoColor" value="red" /><span class="fg-red">빨강</span></label>
+          <label class="chip"><input type="radio" name="memoColor" value="blue" /><span class="fg-blue">파랑</span></label>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>반복</legend>
+        <div class="chips">
+          <label class="chip"><input type="radio" name="freq" value="" /><span>안 함</span></label>
+          <label class="chip"><input type="radio" name="freq" value="weekly" /><span>매주</span></label>
+          <label class="chip"><input type="radio" name="freq" value="monthly" /><span>매월</span></label>
+          <label class="chip"><input type="radio" name="freq" value="yearly" /><span>매년</span></label>
+        </div>
+        <p id="ruleHint" class="hint"></p>
+      </fieldset>
+
+      <div class="sheet-actions">
+        <button type="button" id="deleteBtn" class="btn btn-danger-text">삭제</button>
+        <span class="spacer"></span>
+        <button type="button" id="cancelBtn" class="btn">취소</button>
+        <button type="submit" id="saveBtn" class="btn btn-primary">저장</button>
+      </div>
+    </form>
+  </dialog>
+
+  <!-- 설정 -->
+  <dialog id="menuDialog" class="sheet" aria-labelledby="menuTitle">
+    <div class="sheet-head row">
+      <h2 id="menuTitle">설정</h2>
+      <button type="button" class="icon-btn" data-close aria-label="닫기">&#10005;</button>
+    </div>
+
+    <section class="menu-section">
+      <h3>프로필</h3>
+      <p class="hint">현재: <b id="menuProfileName"></b></p>
+      <div class="btn-row">
+        <button type="button" id="addProfileBtn" class="btn">새 프로필</button>
+        <button type="button" id="renameProfileBtn" class="btn">이름 변경</button>
+        <button type="button" id="deleteProfileBtn" class="btn btn-danger-text">삭제</button>
+      </div>
+    </section>
+
+    <section class="menu-section">
+      <h3>테마</h3>
+      <div class="segmented" role="radiogroup" aria-label="테마">
+        <label><input type="radio" name="theme" value="system" /><span>시스템</span></label>
+        <label><input type="radio" name="theme" value="light" /><span>라이트</span></label>
+        <label><input type="radio" name="theme" value="dark" /><span>다크</span></label>
+      </div>
+    </section>
+
+    <section class="menu-section">
+      <h3>알림</h3>
+      <label class="switch-row">
+        <span>오늘·내일 일정 알림</span>
+        <input type="checkbox" id="notifyToggle" />
+      </label>
+      <p id="notifyStatus" class="hint"></p>
+    </section>
+
+    <section class="menu-section">
+      <h3>백업</h3>
+      <p class="hint">모든 프로필의 일정을 텍스트로 내보내고, 다른 기기에서 붙여넣어 가져올 수 있습니다.</p>
+      <div class="btn-row">
+        <button type="button" id="exportBtn" class="btn">내보내기</button>
+        <button type="button" id="importBtn" class="btn">가져오기</button>
+      </div>
+    </section>
+
+    <section class="menu-section">
+      <h3>초기화</h3>
+      <button type="button" id="resetBtn" class="btn btn-danger">현재 프로필 일정 모두 삭제</button>
+    </section>
+  </dialog>
+
+  <!-- 백업 내보내기/가져오기 -->
+  <dialog id="backupDialog" class="sheet" aria-labelledby="backupTitle">
+    <div class="sheet-head row">
+      <h2 id="backupTitle"></h2>
+      <button type="button" class="icon-btn" data-close aria-label="닫기">&#10005;</button>
+    </div>
+    <p id="backupHint" class="hint"></p>
+    <textarea id="backupText" aria-label="백업 텍스트" rows="8" spellcheck="false"></textarea>
+    <input type="file" id="backupFile" accept="application/json,.json" hidden />
+    <div class="sheet-actions">
+      <button type="button" id="backupFileBtn" class="btn"></button>
+      <span class="spacer"></span>
+      <button type="button" id="backupActionBtn" class="btn btn-primary"></button>
+    </div>
+  </dialog>
+
+  <!-- 확인 -->
+  <dialog id="confirmDialog" class="sheet small" aria-labelledby="confirmText">
+    <p id="confirmText"></p>
+    <div class="sheet-actions">
+      <span class="spacer"></span>
+      <button type="button" id="confirmNo" class="btn">취소</button>
+      <button type="button" id="confirmYes" class="btn btn-danger"></button>
+    </div>
+  </dialog>
+
+  <!-- 텍스트 입력 -->
+  <dialog id="promptDialog" class="sheet small" aria-labelledby="promptTitle">
+    <form id="promptForm" method="dialog">
+      <h2 id="promptTitle"></h2>
+      <input type="text" id="promptInput" aria-label="이름" maxlength="12" autocomplete="off" enterkeyhint="done" />
+      <div class="sheet-actions">
+        <span class="spacer"></span>
+        <button type="button" id="promptCancel" class="btn">취소</button>
+        <button type="submit" class="btn btn-primary">확인</button>
+      </div>
+    </form>
+  </dialog>
+
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js');
     }
   </script>
-</head>
-<body>
-  <div id="topControls">
-    <button id="resetBtn">초기화</button>
-  </div>
-
-  <div id="controls">
-    <button id="prevMonthBtn">&lt;</button>
-    <h2 id="monthTitle"></h2>
-    <button id="nextMonthBtn">&gt;</button>
-  </div>
-
-  <table id="calendar"></table>
-
-  <div id="overlay"></div>
-  <div id="popup">
-    <b id="popupDate"></b>
-    <input type="text" id="memoInput" placeholder="메모를 입력하세요" maxlength="50" />
-    <div>
-      <label><input type="radio" name="color" value="" /> 없음</label>
-      <label><input type="radio" name="color" value="yellow" /> 노랑</label>
-      <label><input type="radio" name="color" value="blue" /> 파랑</label>
-      <label><input type="radio" name="color" value="gray" /> 회색</label>
-    </div>
-    <div>
-      <b>글자색</b><br />
-      <label><input type="radio" name="memoColor" value="black" checked /> 검정</label>
-      <label><input type="radio" name="memoColor" value="red" /> 빨강</label>
-      <label><input type="radio" name="memoColor" value="blue" /> 파랑</label>
-    </div>
-    <button id="saveBtn">저장</button>
-    <button id="cancelBtn">취소</button>
-  </div>
-  <div id="customConfirm">
-    <p>메모와 색깔을 모두 초기화하시겠습니까?</p>
-    <button id="confirmYes">예</button>
-    <button id="confirmNo">아니오</button>
-  </div>
-  <div id="topControls">
-    <button id="resetBtn">초기화</button>
-    <button id="todayBtn"></button> <!-- 오늘 버튼 추가 -->
-  </div>
-
+  <script src="core.js" defer></script>
   <script src="script.js" defer></script>
 </body>
 </html>

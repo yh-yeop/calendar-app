@@ -1,0 +1,9 @@
+{
+  "name": "simple-calendar",
+  "private": true,
+  "description": "심캘 - 간단한 일정 달력 (정적 웹앱, 빌드 없음)",
+  "scripts": {
+    "test": "node --test",
+    "start": "python -m http.server 8080"
+  }
+}
