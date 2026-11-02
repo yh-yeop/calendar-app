@@ -13,7 +13,7 @@
 
 ## 원리/기술
 - #### HTML, CSS로 이미지 없이 자체 기능으로 디자인을 모두 해결
-- #### 공공데이터포털 Open API를 통한 공휴일 정보 로드 (연 단위 1회 호출 + 기기 캐시)
+- #### 공공데이터포털 Open API를 통한 공휴일 정보 로드 — GitHub Actions가 매주 API를 호출해 `holidays/<연도>.json`으로 커밋하고, 앱은 이 정적 파일만 읽음 (인증키를 클라이언트에 두지 않음)
 - #### localStorage에 프로필별로 일정 저장 (구버전 데이터는 첫 실행 때 '기본' 프로필로 자동 이전)
 - #### 서비스 워커로 오프라인 실행 (네트워크 우선, 실패 시 캐시)
 - #### 안드로이드 WebView 앱으로 감싸 배포
@@ -24,6 +24,8 @@
 - `core.js`: DOM과 무관한 로직(날짜 그리드, 공휴일 파싱, 반복 일정, 저장소) — 테스트 대상
 - `script.js`: 화면과 이벤트
 - 배포할 때 `service-worker.js`의 `CACHE_NAME` 버전을 올리면 이전 캐시가 정리됩니다.
+- 공휴일 데이터: `.github/workflows/holidays.yml`이 매주 월요일 작년~내후년을 갱신합니다. 인증키는 저장소 Secrets의 `HOLIDAY_API_KEY`(Encoding/Decoding 키 모두 가능). Actions 탭에서 수동 실행할 때 연도 범위를 지정할 수 있습니다.
+- 로컬에서 직접 갱신: `HOLIDAY_API_KEY=<키> node scripts/fetch-holidays.js 2015 2028`
 
 ## 향후 발전 계획
 - [x] 프로필 추가/변경 기능으로 더 여러 일정을 관리

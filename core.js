@@ -101,13 +101,13 @@
 
   const DAY_MS = 24 * 60 * 60 * 1000;
 
-  // 이미 지난 해는 해가 바뀐 뒤 받은 데이터라면 영구 사용, 그 외는 7일마다 갱신.
+  // 이미 지난 해는 해가 바뀐 뒤 받은 데이터라면 영구 사용, 그 외는 하루마다 갱신 (임시공휴일이 갑자기 지정되는 경우 대비).
   function isHolidayCacheFresh(cache, year, now) {
     if (!cache || typeof cache.fetchedAt !== 'number' || !cache.map) return false;
     const nowMs = now instanceof Date ? now.getTime() : now;
     const fetchedYear = new Date(cache.fetchedAt).getFullYear();
     if (fetchedYear > year) return true;
-    return nowMs - cache.fetchedAt < 7 * DAY_MS;
+    return nowMs - cache.fetchedAt < DAY_MS;
   }
 
   // ---------- 일정 ----------

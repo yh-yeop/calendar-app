@@ -1,0 +1,49 @@
+# 공공데이터포털 특일 정보 API에서 공휴일을 받아 holidays/*.json을 갱신한다.
+# 인증키는 저장소 Settings → Secrets and variables → Actions의 HOLIDAY_API_KEY에 둔다.
+name: 공휴일 갱신
+
+on:
+  schedule:
+    - cron: '0 0 * * 1' # 매주 월요일 09:00 KST (임시공휴일 지정 반영)
+  workflow_dispatch:
+    inputs:
+      from:
+        description: '시작 연도 (비우면 작년)'
+        required: false
+      to:
+        description: '끝 연도 (비우면 내후년)'
+        required: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: holidays
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 공휴일 받기
+        env:
+          HOLIDAY_API_KEY: ${{ secrets.HOLIDAY_API_KEY }}
+        run: node scripts/fetch-holidays.js ${{ inputs.from }} ${{ inputs.to }}
+
+      - name: 변경 사항 커밋
+        run: |
+          if git diff --quiet -- holidays; then
+            echo "변경 없음"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add holidays
+          git commit -m "공휴일 데이터 갱신"
+          git push

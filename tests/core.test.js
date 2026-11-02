@@ -62,13 +62,13 @@ test('shortHolidayName', () => {
 test('isHolidayCacheFresh', () => {
   const now = new Date(2026, 10, 2).getTime();
   assert.equal(SC.isHolidayCacheFresh({ fetchedAt: now - 1000, map: {} }, 2026, now), true);
-  assert.equal(SC.isHolidayCacheFresh({ fetchedAt: now - 8 * 864e5, map: {} }, 2026, now), false);
+  assert.equal(SC.isHolidayCacheFresh({ fetchedAt: now - 2 * 864e5, map: {} }, 2026, now), false);
   // 지난 해 데이터를 해가 바뀐 뒤 받았다면 영구 사용
   assert.equal(SC.isHolidayCacheFresh({ fetchedAt: new Date(2026, 0, 5).getTime(), map: {} }, 2025, now), true);
   assert.equal(SC.isHolidayCacheFresh(null, 2026, now), false);
-  // 7일 경계: 정확히 7일 지난 캐시는 신선하지 않다
-  assert.equal(SC.isHolidayCacheFresh({ fetchedAt: now - 7 * 864e5, map: {} }, 2026, now), false);
-  assert.equal(SC.isHolidayCacheFresh({ fetchedAt: now - 7 * 864e5 + 1, map: {} }, 2026, now), true);
+  // 하루 경계: 정확히 하루 지난 캐시는 신선하지 않다
+  assert.equal(SC.isHolidayCacheFresh({ fetchedAt: now - 864e5, map: {} }, 2026, now), false);
+  assert.equal(SC.isHolidayCacheFresh({ fetchedAt: now - 864e5 + 1, map: {} }, 2026, now), true);
 });
 
 test('ruleMatches: 매주/매월/매년, 시작일 이전 제외', () => {

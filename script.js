@@ -4,8 +4,8 @@
   const SC = window.SC;
   const $ = (id) => document.getElementById(id);
 
-  const SERVICE_KEY = '8JrZ7bV8ldqfBkPw2jiJG8RBfL559YI%2Fk2FYcNRGLUiIE9XSl7Oae%2BeLSnTOmotMf35yk8pBsSIB0NWvhoJOaw%3D%3D';
-  const HOLIDAY_URL = 'https://apis.data.go.kr/B090041/openapi/service/SpcdeInfoService/getRestDeInfo';
+  // 공휴일은 GitHub Actions가 API에서 받아 커밋한 정적 파일을 읽는다 (인증키를 클라이언트에 두지 않기 위해).
+  const HOLIDAY_DIR = 'holidays/';
 
   // localStorage 접근 자체가 예외를 던지는 환경(사생활 보호 모드 등)에서는 메모리 저장소로 대체한다.
   function memoryStorage() {
@@ -215,16 +215,15 @@
     if (SC.isHolidayCacheFresh(loadHolidayCache(year), year, Date.now())) return Promise.resolve(false);
     if (failedAt.has(year) && Date.now() - failedAt.get(year) < RETRY_MS) return Promise.resolve(false);
 
-    const url = `${HOLIDAY_URL}?serviceKey=${SERVICE_KEY}&solYear=${year}&numOfRows=100&_type=json`;
-    const p = fetch(url)
+    const p = fetch(`${HOLIDAY_DIR}${year}.json`)
       .then((res) => {
+        // 파일이 없는 해(수집 범위 밖)는 공휴일 없음으로 본다.
+        if (res.status === 404) return { holidays: {} };
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         return res.json();
       })
       .then((json) => {
-        const header = json && json.response && json.response.header;
-        if (header && header.resultCode && header.resultCode !== '00') throw new Error(header.resultMsg);
-        const map = SC.parseHolidayResponse(json);
+        const map = (json && json.holidays && typeof json.holidays === 'object') ? json.holidays : {};
         const before = JSON.stringify(holidays.get(year) || null);
         holidays.set(year, map);
         failedAt.delete(year);
