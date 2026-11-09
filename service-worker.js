@@ -1,5 +1,5 @@
 // 배포할 때마다 버전을 올리면 이전 캐시를 정리한다.
-const CACHE_NAME = 'calendar-app-v5';
+const CACHE_NAME = 'calendar-app-v6';
 
 // GitHub Pages 하위 경로(/calendar-app/)에서도 동작하도록 상대 경로를 쓴다.
 const APP_SHELL = [

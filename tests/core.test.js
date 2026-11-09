@@ -103,6 +103,15 @@ test('upcoming', () => {
   assert.deepEqual(SC.upcoming(data, '2026-11-02', 2), [{ key: '2026-11-03', offset: 1, memo: '병원' }]);
 });
 
+test('normalizeMemo: 줄바꿈으로 여러 메모, 빈 줄·공백 정리, 줄 수·글자 수 제한', () => {
+  assert.equal(SC.normalizeMemo(' 회의 \r\n\n  점심 약속\n'), '회의\n점심 약속');
+  assert.equal(SC.normalizeMemo('a\nb\nc\nd\ne\nf'), 'a\nb\nc\nd\ne');
+  assert.equal(SC.normalizeMemo('x'.repeat(200)).length, SC.MEMO_MAX);
+  assert.equal(SC.normalizeMemo(null), '');
+  assert.deepEqual(SC.memoLines('회의\n점심'), ['회의', '점심']);
+  assert.equal(SC.normalizeEntry({ memo: '가\n\n나' }).memo, '가\n나');
+});
+
 test('normalizeEntry: 구버전 black 글자색, 잘못된 값 정리', () => {
   assert.deepEqual(SC.normalizeEntry({ memo: ' a ', color: 'yellow', memoColor: 'black' }), { memo: 'a', color: 'yellow', memoColor: '' });
   assert.deepEqual(SC.normalizeEntry({ memo: 1, color: 'x', memoColor: 'y' }), { memo: '', color: '', memoColor: '' });

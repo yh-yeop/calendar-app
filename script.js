@@ -274,13 +274,16 @@
       else if (c.weekDay === 6) dateClass.push('sat');
       if (c.key === todayKey) dateClass.push('today');
 
-      const label = SC.formatKeyLong(c.key) + (holiday ? `, ${holiday}` : '') + (entry && entry.memo ? `, ${entry.memo}` : '');
+      const lines = entry ? SC.memoLines(entry.memo) : [];
+      const label = SC.formatKeyLong(c.key) + (holiday ? `, ${holiday}` : '') + (lines.length ? `, ${lines.join(', ')}` : '');
 
       html += `<td class="${tdClass.join(' ')}" data-key="${c.key}" tabindex="0" role="button" aria-label="${SC.escapeHtml(label)}">`
         + `<span class="${dateClass.join(' ')}">${c.day}</span>`
         + (holiday ? `<span class="holiday-name">${SC.escapeHtml(SC.shortHolidayName(holiday))}</span>` : '')
-        + (entry && entry.memo
-          ? `<span class="memo${entry.memoColor ? ' fg-' + entry.memoColor : ''}">${entry.source === 'rule' ? '<i class="repeat" aria-hidden="true">↻</i>' : ''}${SC.escapeHtml(entry.memo)}</span>`
+        + (lines.length
+          ? `<span class="memo${lines.length > 3 ? ' multi many' : lines.length > 1 ? ' multi' : ''}${entry.memoColor ? ' fg-' + entry.memoColor : ''}">`
+            + lines.map((l, j) => `<span class="memo-item">${j === 0 && entry.source === 'rule' ? '<i class="repeat" aria-hidden="true">↻</i>' : ''}${SC.escapeHtml(l)}</span>`).join('')
+            + '</span>'
           : '')
         + '</td>';
 
@@ -338,7 +341,22 @@
   }
 
   function updateMemoCount() {
-    els.memoCount.textContent = `${els.memoInput.value.length}/${SC.MEMO_MAX}`;
+    const n = SC.memoLines(els.memoInput.value).length;
+    const lines = n > 1 ? `메모 ${n}개 · ` : '';
+    const over = n > SC.MEMO_LINES_MAX ? ` (최대 ${SC.MEMO_LINES_MAX}개까지 저장)` : '';
+    els.memoCount.textContent = `${lines}${els.memoInput.value.length}/${SC.MEMO_MAX}${over}`;
+  }
+
+  // Enter는 줄바꿈(다음 메모), Ctrl/Cmd+Enter는 저장. 메모가 이미 최대 개수면 새 줄을 막는다.
+  function onMemoKeydown(e) {
+    if (e.key !== 'Enter' || e.isComposing) return;
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      els.editForm.requestSubmit();
+    } else if (!e.shiftKey && SC.memoLines(els.memoInput.value).length >= SC.MEMO_LINES_MAX) {
+      e.preventDefault();
+      toast(`메모는 날짜마다 ${SC.MEMO_LINES_MAX}개까지 쓸 수 있어요.`);
+    }
   }
 
   function updateRuleHint() {
@@ -570,7 +588,7 @@
     for (const p of state.profiles.list) {
       const data = p.id === state.profiles.active ? state.data : store.loadData(p.id);
       for (const it of SC.upcoming(data, todayKey, 2)) {
-        items.push(`${it.offset === 0 ? '오늘' : '내일'} · ${multi ? `[${p.name}] ` : ''}${it.memo}`);
+        items.push(`${it.offset === 0 ? '오늘' : '내일'} · ${multi ? `[${p.name}] ` : ''}${SC.memoLines(it.memo).join(' / ')}`);
       }
     }
     return items;
@@ -802,6 +820,7 @@
     saveEditor();
   });
   els.memoInput.addEventListener('input', updateMemoCount);
+  els.memoInput.addEventListener('keydown', onMemoKeydown);
   for (const r of document.querySelectorAll('input[name="freq"]')) r.addEventListener('change', updateRuleHint);
   $('cancelBtn').addEventListener('click', closeDialog);
   els.deleteBtn.addEventListener('click', deleteFromEditor);

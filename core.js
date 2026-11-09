@@ -12,7 +12,8 @@
   const MEMO_COLORS = ['', 'red', 'blue'];
   const FREQS = ['weekly', 'monthly', 'yearly'];
   const FREQ_LABELS = { weekly: '매주', monthly: '매월', yearly: '매년' };
-  const MEMO_MAX = 50;
+  const MEMO_MAX = 100; // 줄바꿈 포함 전체 글자 수
+  const MEMO_LINES_MAX = 5; // 한 줄이 메모 하나
 
   const KEYS = {
     profiles: 'sc:v2:profiles',
@@ -112,9 +113,19 @@
 
   // ---------- 일정 ----------
 
+  // 여러 메모는 줄바꿈으로 구분한다. 줄마다 앞뒤 공백을 떼고 빈 줄은 버린다.
+  function memoLines(memo) {
+    if (typeof memo !== 'string') return [];
+    return memo.split(/\r\n|\r|\n/).map((l) => l.trim()).filter(Boolean);
+  }
+
+  function normalizeMemo(memo) {
+    return memoLines(memo).slice(0, MEMO_LINES_MAX).join('\n').slice(0, MEMO_MAX).trim();
+  }
+
   function normalizeEntry(e) {
     if (!e || typeof e !== 'object') return null;
-    const memo = typeof e.memo === 'string' ? e.memo.trim().slice(0, MEMO_MAX) : '';
+    const memo = normalizeMemo(e.memo);
     const color = BG_COLORS.includes(e.color) ? e.color : '';
     // 구버전은 글자색 기본값을 'black'으로 저장했다.
     const memoColor = MEMO_COLORS.includes(e.memoColor) ? e.memoColor : '';
@@ -332,10 +343,10 @@
   }
 
   return {
-    KEYS, WEEKDAYS, BG_COLORS, MEMO_COLORS, FREQS, FREQ_LABELS, MEMO_MAX,
+    KEYS, WEEKDAYS, BG_COLORS, MEMO_COLORS, FREQS, FREQ_LABELS, MEMO_MAX, MEMO_LINES_MAX,
     pad2, toKey, dateToKey, parseKey, addDays, formatKeyLong, buildMonthGrid, gridYears,
     parseHolidayResponse, shortHolidayName, isHolidayCacheFresh,
-    normalizeEntry, isEmptyEntry, ruleMatches, resolveEntry, emptyData, isValidKey, normalizeData, upcoming,
+    memoLines, normalizeMemo, normalizeEntry, isEmptyEntry, ruleMatches, resolveEntry, emptyData, isValidKey, normalizeData, upcoming,
     escapeHtml, uid, readJson, createStore,
   };
 });

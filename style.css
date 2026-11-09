@@ -363,15 +363,35 @@ td.dimmed .date.today {
 }
 
 .memo {
-  display: -webkit-box;
   margin-top: 3px;
   font-size: 0.85rem;
   line-height: 1.25;
   overflow-wrap: anywhere;
+}
+
+/* 메모 한 개는 3줄, 2~3개면 메모마다 2줄, 4개 이상이면 1줄까지 보이고 사이를 점선으로 나눈다. */
+.memo-item {
+  display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
   line-clamp: 3;
   overflow: hidden;
+}
+
+.memo.multi .memo-item {
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+}
+
+.memo.many .memo-item {
+  -webkit-line-clamp: 1;
+  line-clamp: 1;
+}
+
+.memo-item + .memo-item {
+  margin-top: 2px;
+  padding-top: 2px;
+  border-top: 1px dashed color-mix(in srgb, currentColor 35%, transparent);
 }
 
 .memo .repeat {
@@ -484,6 +504,15 @@ dialog[open] {
   font-family: ui-monospace, Consolas, monospace;
   font-size: 0.8rem;
   resize: vertical;
+}
+
+.sheet #memoInput {
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.4;
+  min-height: calc(3 * 1.4em + 22px);
+  max-height: calc(5 * 1.4em + 22px);
+  field-sizing: content; /* 지원 브라우저에서는 메모 줄 수만큼 늘어난다 */
 }
 
 #promptInput {
