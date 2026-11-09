@@ -506,13 +506,63 @@ dialog[open] {
   resize: vertical;
 }
 
-.sheet #memoInput {
-  font-family: inherit;
-  font-size: 1rem;
-  line-height: 1.4;
-  min-height: calc(3 * 1.4em + 22px);
-  max-height: calc(5 * 1.4em + 22px);
-  field-sizing: content; /* 지원 브라우저에서는 메모 줄 수만큼 늘어난다 */
+.memo-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.memo-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sheet .memo-field {
+  flex: 1;
+  min-width: 0;
+}
+
+.memo-del {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 1.3rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.memo-del:hover {
+  background: var(--surface-2);
+  color: var(--danger);
+}
+
+.add-memo {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 8px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--primary-strong);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.add-memo:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.add-memo:disabled {
+  color: var(--text-muted);
+  font-weight: 400;
+  cursor: default;
 }
 
 #promptInput {

@@ -12,8 +12,8 @@
   const MEMO_COLORS = ['', 'red', 'blue'];
   const FREQS = ['weekly', 'monthly', 'yearly'];
   const FREQ_LABELS = { weekly: '매주', monthly: '매월', yearly: '매년' };
-  const MEMO_MAX = 100; // 줄바꿈 포함 전체 글자 수
-  const MEMO_LINES_MAX = 5; // 한 줄이 메모 하나
+  const MEMO_MAX = 50; // 메모 하나의 글자 수
+  const MEMO_LINES_MAX = 5; // 날짜마다 메모 개수 (저장할 때는 줄바꿈으로 이어 붙인다)
 
   const KEYS = {
     profiles: 'sc:v2:profiles',
@@ -120,7 +120,7 @@
   }
 
   function normalizeMemo(memo) {
-    return memoLines(memo).slice(0, MEMO_LINES_MAX).join('\n').slice(0, MEMO_MAX).trim();
+    return memoLines(memo).slice(0, MEMO_LINES_MAX).map((l) => l.slice(0, MEMO_MAX).trim()).join('\n');
   }
 
   function normalizeEntry(e) {

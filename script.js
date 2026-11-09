@@ -55,8 +55,8 @@
     editForm: $('editForm'),
     editTitle: $('editTitle'),
     editHoliday: $('editHoliday'),
-    memoInput: $('memoInput'),
-    memoCount: $('memoCount'),
+    memoList: $('memoList'),
+    addMemoBtn: $('addMemoBtn'),
     ruleHint: $('ruleHint'),
     deleteBtn: $('deleteBtn'),
 
@@ -340,23 +340,96 @@
     return r ? r.value : '';
   }
 
-  function updateMemoCount() {
-    const n = SC.memoLines(els.memoInput.value).length;
-    const lines = n > 1 ? `메모 ${n}개 · ` : '';
-    const over = n > SC.MEMO_LINES_MAX ? ` (최대 ${SC.MEMO_LINES_MAX}개까지 저장)` : '';
-    els.memoCount.textContent = `${lines}${els.memoInput.value.length}/${SC.MEMO_MAX}${over}`;
+  // ---------- 메모 목록 (메모마다 입력칸 하나) ----------
+
+  function memoFields() {
+    return [...els.memoList.querySelectorAll('.memo-field')];
   }
 
-  // Enter는 줄바꿈(다음 메모), Ctrl/Cmd+Enter는 저장. 메모가 이미 최대 개수면 새 줄을 막는다.
-  function onMemoKeydown(e) {
-    if (e.key !== 'Enter' || e.isComposing) return;
-    if (e.ctrlKey || e.metaKey) {
-      e.preventDefault();
-      els.editForm.requestSubmit();
-    } else if (!e.shiftKey && SC.memoLines(els.memoInput.value).length >= SC.MEMO_LINES_MAX) {
-      e.preventDefault();
-      toast(`메모는 날짜마다 ${SC.MEMO_LINES_MAX}개까지 쓸 수 있어요.`);
+  function syncMemoRows() {
+    const fields = memoFields();
+    fields.forEach((f, i) => {
+      f.setAttribute('aria-label', fields.length > 1 ? `메모 ${i + 1}` : '메모');
+      f.nextElementSibling.setAttribute('aria-label', fields.length > 1 ? `메모 ${i + 1} 지우기` : '메모 지우기');
+    });
+    const full = fields.length >= SC.MEMO_LINES_MAX;
+    els.addMemoBtn.disabled = full;
+    els.addMemoBtn.textContent = full ? `메모는 ${SC.MEMO_LINES_MAX}개까지 쓸 수 있어요` : '＋ 메모 추가';
+  }
+
+  function appendMemoRow(value) {
+    const row = document.createElement('div');
+    row.className = 'memo-row';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'memo-field';
+    input.maxLength = SC.MEMO_MAX;
+    input.autocomplete = 'off';
+    input.enterKeyHint = 'next';
+    input.placeholder = '메모를 입력하세요';
+    input.value = value;
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'memo-del';
+    del.textContent = '×';
+    row.append(input, del);
+    els.memoList.append(row);
+    return input;
+  }
+
+  function setMemoRows(memo) {
+    els.memoList.replaceChildren();
+    const lines = SC.memoLines(memo);
+    for (const l of lines.length ? lines : ['']) appendMemoRow(l);
+    syncMemoRows();
+  }
+
+  // 마지막 칸이 비어 있으면 새로 만들지 않고 그 칸으로 간다.
+  function addMemo() {
+    const fields = memoFields();
+    const last = fields[fields.length - 1];
+    if (last && !last.value.trim()) {
+      last.focus();
+      return;
     }
+    if (fields.length >= SC.MEMO_LINES_MAX) return;
+    const input = appendMemoRow('');
+    syncMemoRows();
+    input.focus();
+  }
+
+  function removeMemo(field) {
+    const fields = memoFields();
+    const i = fields.indexOf(field);
+    if (fields.length === 1) {
+      field.value = '';
+      field.focus();
+      return;
+    }
+    field.parentElement.remove();
+    syncMemoRows();
+    const rest = memoFields();
+    rest[Math.min(i, rest.length - 1)].focus();
+  }
+
+  function memoValue() {
+    return memoFields().map((f) => f.value).join('\n');
+  }
+
+  // Enter: 다음 칸으로, 마지막 칸에 글이 있으면 새 메모 추가, 더 갈 곳이 없으면 저장. Ctrl/Cmd+Enter는 바로 저장.
+  function onMemoKeydown(e) {
+    const field = e.target.closest('.memo-field');
+    if (!field || e.key !== 'Enter' || e.isComposing) return;
+    e.preventDefault();
+    if (e.ctrlKey || e.metaKey) {
+      els.editForm.requestSubmit();
+      return;
+    }
+    const fields = memoFields();
+    const i = fields.indexOf(field);
+    if (i < fields.length - 1) fields[i + 1].focus();
+    else if (field.value.trim() && fields.length < SC.MEMO_LINES_MAX) addMemo();
+    else els.editForm.requestSubmit();
   }
 
   function updateRuleHint() {
@@ -388,11 +461,10 @@
     els.editHoliday.textContent = holiday;
     els.editHoliday.hidden = !holiday;
 
-    els.memoInput.value = src.memo;
+    setMemoRows(src.memo);
     setRadio('color', src.color);
     setRadio('memoColor', src.memoColor);
     setRadio('freq', rule ? rule.freq : '');
-    updateMemoCount();
     updateRuleHint();
 
     els.deleteBtn.hidden = !own && !rule;
@@ -400,7 +472,7 @@
 
     openDialog(els.editDialog);
     // 모바일에서 키보드가 바로 올라오지 않게, 데스크톱(정밀 포인터)에서만 자동 포커스
-    if (window.matchMedia('(pointer: fine)').matches) els.memoInput.focus();
+    if (window.matchMedia('(pointer: fine)').matches) memoFields()[0].focus();
   }
 
   function persist() {
@@ -427,7 +499,7 @@
   function saveEditor() {
     const key = state.editKey;
     const entry = SC.normalizeEntry({
-      memo: els.memoInput.value,
+      memo: memoValue(),
       color: getRadio('color'),
       memoColor: getRadio('memoColor'),
     });
@@ -819,8 +891,12 @@
     e.preventDefault();
     saveEditor();
   });
-  els.memoInput.addEventListener('input', updateMemoCount);
-  els.memoInput.addEventListener('keydown', onMemoKeydown);
+  els.memoList.addEventListener('keydown', onMemoKeydown);
+  els.memoList.addEventListener('click', (e) => {
+    const del = e.target.closest('.memo-del');
+    if (del) removeMemo(del.previousElementSibling);
+  });
+  els.addMemoBtn.addEventListener('click', addMemo);
   for (const r of document.querySelectorAll('input[name="freq"]')) r.addEventListener('change', updateRuleHint);
   $('cancelBtn').addEventListener('click', closeDialog);
   els.deleteBtn.addEventListener('click', deleteFromEditor);
